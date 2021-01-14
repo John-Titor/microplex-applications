@@ -5,7 +5,6 @@
 
 import argparse
 import struct
-import math
 from pathlib import Path
 import can
 
@@ -355,22 +354,25 @@ class CANInterface(object):
                                       bitrate=args.can_speed)
         self._verbose = args.verbose
 
+        # filter just the IDs we expect to see coming from the module
         self._bus.set_filters([
             {"can_id": ACK_ID,  "can_mask": (1 << 29) - 1, "extended": True},
-            {"can_id": CMD_ID,  "can_mask": (1 << 29) - 1, "extended": True},
-            {"can_id": SREC_ID, "can_mask": (1 << 29) - 1, "extended": True},
             {"can_id": RSP_ID,  "can_mask": (1 << 29) - 1, "extended": True},
             {"can_id": DATA_ID, "can_mask": (1 << 29) - 1, "extended": True}
         ])
+
+        # flush any buffered messages we don't want to see
         while self._bus.recv(0) is not None:
             pass
         log(self._bus.state)
 
     def send(self, message):
+        """send the message"""
         log(f'CAN TX: {message}')
         self._bus.send(message, 1)
 
     def recv(self, timeout=10):
+        """wait for a message"""
         try:
             msg = self._bus.recv(timeout)
             log(f'CAN RX: {msg}')
@@ -379,6 +381,7 @@ class CANInterface(object):
         return msg
 
     def scan(self):
+        """send the all-call message and collect replies"""
         self.send(MSG_ping())
         modules = dict()
         while True:
@@ -408,32 +411,32 @@ class Srecords(object):
             raise RuntimeError(f'could not read S-records from {path}')
         self.lines = list()
         seen_s9 = False
+        # preprocess into a form ready for sending
         for line in lines:
             if line[0] != 'S':
                 raise RuntimeError(f'malformed S-record: {line}')
             if line[1] == '9':
+                # SDCC always generates an all-zeroes entrypoint
+                line = "S9032200DA"
                 seen_s9 = True
-            elif line[1] == '0':
-                # discard S0 records, they don't do anything
+            elif line[1] != '1':
+                # ignore anything other than S1 and S9 records
                 continue
-            elif line[1] == '1':
+            else:
                 if seen_s9:
                     raise RuntimeError('S9 record must be last in the file')
 
-                # verify that the address range is writable
-                count = int(f'0x{line[2:4]}', 16) - 3
-                address = int(f'0x{line[4:8]}', 16)
-                end = address + count
-                if (address >= 0x2200) and (end <= 0xaf7b):
-                    pass
-                elif (address >= 0xaf80) and (end <= 0xbdff):
-                    pass
-                else:
-                    # silently discard this, as SDCC etc. will emit vectors
-                    # that can't be programmed
-                    continue
+            # verify that the address range is writable
+            count = int(f'0x{line[2:4]}', 16) - 3
+            address = int(f'0x{line[4:8]}', 16)
+            end = address + count
+            if (address >= 0x2200) and (end <= 0xaf7b):
+                pass
+            elif (address >= 0xaf80) and (end <= 0xbdff):
+                pass
             else:
-                # ignore everything else
+                # silently discard this, as SDCC etc. will emit vectors
+                # that can't be programmed
                 continue
 
             # first two bytes to send are ascii, remainder are literals
@@ -447,6 +450,7 @@ class Module(object):
         self._verbose = args.verbose
 
     def _cmd(self, message):
+        """send a message, wait for a response"""
         self._interface.send(message)
         rsp = self._interface.recv()
         if rsp is None:
@@ -455,6 +459,7 @@ class Module(object):
         return rsp
 
     def _select(self):
+        """select the module for further commands"""
         rsp = self._cmd(MSG_select(self._module_id))
         sel = MSG_selected(rsp)
         if (sel.module_id != self._module_id):
@@ -462,6 +467,7 @@ class Module(object):
         return sel.sw_version
 
     def _read_eeprom(self, address, length):
+        """read bytes from the EEPROM"""
         result = bytearray()
         while length > 0:
             amount = length if length <= 8 else 8
@@ -472,6 +478,7 @@ class Module(object):
         return result
 
     def _wait_for_boot(self, timeout):
+        """wait for the message broadcast by a module rebooting"""
         while True:
             rsp = self._interface.recv(timeout)
             if rsp is None:
@@ -483,6 +490,7 @@ class Module(object):
                 pass
 
     def _enter_flash_mode(self):
+        """put the module into flash/erase mode"""
         self._select()
         rsp = self._cmd(MSG_program())
         try:
@@ -496,13 +504,14 @@ class Module(object):
 
     def _print_progress(self, title, limit, position):
         scale = 60 / limit
-        hashes = math.ceil(position * scale)
+        hashes = int(position * scale)
         bar = '#' * hashes + '.' * (60 - hashes)
-        print(f'\r{title:<8} [{bar}]', end='')
+        print(f'\r{title:<8} [{bar}] {position}/{limit}', end='')
         if position == limit:
             print('')
 
     def _erase_progress(self, title):
+        """monitor erase progress"""
         while True:
             rsp = self._interface.recv(2)
             if rsp is None:
@@ -518,6 +527,7 @@ class Module(object):
                 break
 
     def _erase(self):
+        """erase the currently-selected module"""
         self._interface.send(MSG_erase())
         self._erase_progress("ERASE ")
         self._erase_progress("ERASE2")
@@ -532,8 +542,8 @@ class Module(object):
                               f'instead erase done')
 
     def _program(self, srecords):
-        progress = 0
-        scale = 50 / len(srecords.lines)
+        """flash srecords to the currently-selected module"""
+        progress = 1
         for srec in srecords.lines:
             for index in range(0, len(srec), 8):
                 rsp = self._cmd(MSG_srecord(srec[index:index+8]))
@@ -556,15 +566,18 @@ class Module(object):
                           f' - check S-records for S9 at end')
 
     def upload(self, srecords):
+        """flash the module with the supplied program"""
         self._enter_flash_mode()
         self._erase()
         self._program(srecords)
 
     def get_eeprom(self):
+        """get raw EEPROM contents"""
         self._select()
         return self._read_eeprom(0, 0x800)
 
     def get_eeprom_properties(self):
+        """decode EEPROM contents"""
         contents = self.get_eeprom()
         (_, magic) = struct.unpack(">HH", contents[0:4])
         if magic != EEPROM_STARTKENNER:
@@ -584,11 +597,16 @@ class Module(object):
         return properties
 
     def erase(self):
+        """erase the module"""
         self._enter_flash_mode()
         self._erase()
 
 
 def find_module_id(interface, args):
+    """
+    Decide on a module; either one explicitly identified on the
+    commandline, or if there is only one connected module, that one.
+    """
     if args.module_id is not None:
         return args.module_id
     modules = interface.scan()
@@ -602,6 +620,7 @@ def find_module_id(interface, args):
 
 
 def do_scan(interface, args):
+    """scan for modules and print some basic information"""
     modules = interface.scan()
     if len(modules) > 0:
         print(f'{"ID":<6} '
@@ -626,6 +645,7 @@ def do_scan(interface, args):
 
 
 def do_upload(interface, args):
+    """implement the --upload option"""
     module_id = find_module_id(interface, args)
     module = Module(interface, module_id, args)
     srecords = Srecords(args.upload, args)
@@ -633,6 +653,7 @@ def do_upload(interface, args):
 
 
 def do_eeprom_dump(interface, args):
+    """implement the --dump-eeprom option"""
     module_id = find_module_id(interface, args)
     module = Module(interface, module_id, args)
     contents = module.get_eeprom()
@@ -640,6 +661,7 @@ def do_eeprom_dump(interface, args):
 
 
 def do_eeprom_decode(interface, args):
+    """implement the --decode-eeprom option"""
     module_id = find_module_id(interface, args)
     module = Module(interface, module_id, args)
     properties = module.get_eeprom_properties()
@@ -647,6 +669,7 @@ def do_eeprom_decode(interface, args):
         print(f'{name:<30} {value}')
 
 def do_erase(interface, args):
+    """implement the --erase option"""
     module_id = find_module_id(interface, args)
     module = Module(interface, module_id, args)
     module.erase()
