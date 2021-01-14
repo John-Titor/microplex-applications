@@ -5,6 +5,7 @@
 
 import argparse
 import struct
+import math
 from pathlib import Path
 import can
 
@@ -14,14 +15,46 @@ RSP_ID = 0x1ffffff2
 SREC_ID = 0x1ffffff3
 DATA_ID = 0x1ffffff4
 
-EEPROM_MAP = {
-    'label_line_1': (0x08, 12),
-    'part_number': (0x14, 12),
-    'product_name': (0x20, 20),
-    'label_line_2': (0x34, 8),
-    'date': (0x3c, 10),
-    'user_version': (0x6b, 20),
-    'user_name': (0x7f, 30)
+EEPROM_STARTKENNER = 1331
+EEPROM_MAP = [
+    # (format, name)
+    ('>H',  None),
+    ('>H',  None),  # 'Startkenner'
+    ('>I',  'Seriennummer'),
+    ('12s', 'Teilenummer'),
+    ('12s', 'Zeichnungsnummer'),
+    ('20s', 'Bezeichnung'),
+    ('8s',  'Fertigungsauftrag'),
+    ('8s',  'Pruefdatum'),
+    ('>H',  'HW_Version'),
+    ('B',   'ResetCounter'),
+    ('>H',  'Library_Version'),
+    ('5B',  'ResetReasonCounter'),
+    ('B',   'MCU_Type'),
+    ('B',   'HW_CAN_Active'),
+    ('3B',  None),  # 'Bootloader_Werksdaten_Reserve1'
+    ('>H',  'Bootloader_Version'),
+    ('>H',  'PROG_Status'),
+    ('>H',  'Portbyte1'),
+    ('>H',  'Portbyte2'),
+    ('>H',  'Baudrate_Bootloader1'),
+    ('>H',  'Baudrate_Bootloader2'),
+    ('B',   'Bootloader_ID_ext'),
+    ('>I',  'Bootloader_ID'),
+    ('B',   'Bootloader_ID_CRC'),
+    ('B',   'Bootloader_ID_Kopie_ext'),
+    ('>I',  'Bootloader_ID_Kopie'),
+    ('B',   'Bootloader_ID_Kopie_CRC'),
+    ('20s', 'SW_Version'),
+    ('30s', 'Modulname'),
+    ('B',   'BL_CAN_Bus'),
+    ('>H',  'COP_WD_Timeout'),
+    ('7B',  None)  # 'Bootloader_Configdaten_Reserve1'
+]
+
+STATUS_MAP = {
+    0: 'OK',
+    4: 'NO PROG'
 }
 
 
@@ -96,6 +129,15 @@ class MSG_erase(TXMessage):
         super().__init__(CMD_ID, 0x0202)
 
 
+class MSG_srecord(can.Message):
+    """raw S-record data"""
+    def __init__(self, data):
+        super().__init__(arbitration_id=0x1ffffff3,
+                         is_extended_id=True,
+                         dlc=len(data),
+                         data=data)
+
+
 class RXMessage(object):
     """
     Abstract for messages that have been received.
@@ -111,16 +153,18 @@ class RXMessage(object):
         if raw.dlc != struct.calcsize(self._format):
             raise MessageError(f'expected reply with length {expected_dlc} '
                                f'but got {raw.dlc}')
-        self._data = raw.data
 
-    def unpack(self):
-        values = struct.unpack(self._format, self._data)
+        self._data = raw.data
+        self._values = struct.unpack(self._format, self._data)
         for (index, (check, value)) in enumerate(self._filter):
-            if check and value != values[index]:
+            if check and value != self._values[index]:
                 raise MessageError(f'reply field {index} is '
-                                   f'0x{values[index]:x} '
+                                   f'0x{self._values[index]:x} '
                                    f'but expected 0x{value:x}')
-        return values
+
+    @classmethod
+    def len(self):
+        return struct.calcsize(self._format)
 
 
 class MSG_boot(RXMessage):
@@ -130,13 +174,13 @@ class MSG_boot(RXMessage):
                (True, 0),
                (True, 0),
                (False, 0),
-               (True, 0),
+               (False, 0),
                (False, 0)]
 
     def __init__(self, raw):
         super().__init__(expected_id=ACK_ID,
                          raw=raw)
-        (_, _, _, self.module_id, _, self.sw_version) = self.unpack()
+        (_, _, _, self.module_id, self.status, self.sw_version) = self._values
 
 
 class MSG_reboot(RXMessage):
@@ -146,13 +190,13 @@ class MSG_reboot(RXMessage):
                (True, 0),
                (True, 0),
                (False, 0),
-               (True, 0),
+               (False, 0),
                (False, 0)]
 
     def __init__(self, raw):
         super().__init__(expected_id=ACK_ID,
                          raw=raw)
-        (_, _, _, self.module_id, _, self.sw_version) = self.unpack()
+        (_, _, _, self.module_id, status, self.sw_version) = self._values
 
 
 class MSG_ack(RXMessage):
@@ -162,13 +206,13 @@ class MSG_ack(RXMessage):
                (True, 0),
                (True, 0),
                (False, 0),
-               (True, 0),
+               (False, 0),
                (False, 0)]
 
     def __init__(self, raw):
         super().__init__(expected_id=ACK_ID,
                          raw=raw)
-        (_, _, _, self.module_id, _, self.sw_version) = self.unpack()
+        (_, _, _, self.module_id, self.status, self.sw_version) = self._values
 
 
 class MSG_selected(RXMessage):
@@ -188,7 +232,7 @@ class MSG_selected(RXMessage):
     def __init__(self, raw):
         super().__init__(expected_id=RSP_ID,
                          raw=raw)
-        (_, _, _, self.module_id, self.sw_version) = self.unpack()
+        (_, _, _, self.module_id, self.sw_version) = self._values
 
 
 class MSG_program_nak(RXMessage):
@@ -207,7 +251,7 @@ class MSG_program_nak(RXMessage):
     def __init__(self, raw):
         super().__init__(expected_id=RSP_ID,
                          raw=raw)
-        (_, _, _, self.module_id, _) = self.unpack()
+        (_, _, _, self.module_id, _) = self._values
 
 
 class MSG_program_ack(RXMessage):
@@ -222,7 +266,7 @@ class MSG_program_ack(RXMessage):
     def __init__(self, raw):
         super().__init__(expected_id=RSP_ID,
                          raw=raw)
-        (_, _, _, self.module_id, _) = self.unpack()
+        (_, _, _, self.module_id, _) = self._values
 
 
 class MSG_progress(RXMessage):
@@ -239,7 +283,69 @@ class MSG_progress(RXMessage):
     def __init__(self, raw):
         super().__init__(expected_id=RSP_ID,
                          raw=raw)
-        (_, self.progress, self.limit, _) = self.unpack()
+        (_, self.progress, self.limit, _) = self._values
+
+
+class MSG_erase_done(RXMessage):
+    """sent after erase is completed"""
+    _format = '>BBBB'
+    _filter = [(True, 0),
+               (True, 0),
+               (True, 0),
+               (True, 1)]
+
+    def __init__(self, raw):
+        super().__init__(expected_id=RSP_ID,
+                         raw=raw)
+
+
+class MSG_srec_start_ok(RXMessage):
+    """sent in response to the first part of an S-record"""
+    _format = '>BBBBB'
+    _filter = [(True, 0),
+               (True, 1),
+               (True, 1),
+               (True, 1),
+               (True, 1)]
+
+    def __init__(self, raw):
+        super().__init__(expected_id=RSP_ID,
+                         raw=raw)
+
+
+class MSG_srec_cont_ok(RXMessage):
+    """sent in response to an internal part of an S-record"""
+    _format = '>BB'
+    _filter = [(True, 0),
+               (True, 1)]
+
+    def __init__(self, raw):
+        super().__init__(expected_id=RSP_ID,
+                         raw=raw)
+
+
+class MSG_srec_end_ok(RXMessage):
+    """sent in response to an internal part of an S-record"""
+    _format = '>BBB'
+    _filter = [(True, 0),
+               (True, 0),
+               (True, 1)]
+
+    def __init__(self, raw):
+        super().__init__(expected_id=RSP_ID,
+                         raw=raw)
+
+
+class MSG_srecords_done(RXMessage):
+    """sent in response to an S9 record at the end of the file"""
+    _format = '>BBB'
+    _filter = [(True, 0),
+               (True, 0x12),
+               (True, 0x34)]
+
+    def __init__(self, raw):
+        super().__init__(expected_id=RSP_ID,
+                         raw=raw)
 
 
 class CANInterface(object):
@@ -274,22 +380,26 @@ class CANInterface(object):
 
     def scan(self):
         self.send(MSG_ping())
-        ids = list()
+        modules = dict()
         while True:
             rsp = self.recv(1)
             if rsp is not None:
                 try:
                     ack = MSG_ack(rsp)
-                except CanError as e:
-                    raise CanError('unexpected programming traffic '
-                                   'on CAN bus during scan')
-                ids.append(ack.module_id)
+                except MessageError as e:
+                    raise MessageError('unexpected programming traffic '
+                                       'on CAN bus during scan')
+                modules[ack.module_id] = {
+                    'status': ack.status,
+                    'sw_ver': ack.sw_version
+                }
             else:
                 break
-        return ids
+        return modules
 
 
 class Srecords(object):
+    """XXX should sort records to put S9 at the end"""
     def __init__(self, path, args):
         try:
             with path.open() as f:
@@ -297,13 +407,19 @@ class Srecords(object):
         except Exception as e:
             raise RuntimeError(f'could not read S-records from {path}')
         self.lines = list()
+        seen_s9 = False
         for line in lines:
             if line[0] != 'S':
                 raise RuntimeError(f'malformed S-record: {line}')
+            if line[1] == '9':
+                seen_s9 = True
             elif line[1] == '0':
                 # discard S0 records, they don't do anything
                 continue
             elif line[1] == '1':
+                if seen_s9:
+                    raise RuntimeError('S9 record must be last in the file')
+
                 # verify that the address range is writable
                 count = int(f'0x{line[2:4]}', 16) - 3
                 address = int(f'0x{line[4:8]}', 16)
@@ -313,14 +429,15 @@ class Srecords(object):
                 elif (address >= 0xaf80) and (end <= 0xbdff):
                     pass
                 else:
+                    # silently discard this, as SDCC etc. will emit vectors
+                    # that can't be programmed
                     continue
-            elif line[1] == '9':
-                # pass S9 records
-                pass
             else:
                 # ignore everything else
                 continue
-            self.lines.append(line.strip())
+
+            # first two bytes to send are ascii, remainder are literals
+            self.lines.append(bytearray(line[0:2], 'ascii') + bytes.fromhex(line[2:]))
 
 
 class Module(object):
@@ -354,13 +471,6 @@ class Module(object):
             result += rsp.data
         return result
 
-    def identify(self):
-        self._select()
-        result = dict()
-        for key, extent in EEPROM_MAP.items():
-            result[key] = self._read_eeprom(extent[0], extent[1]).decode('ascii')
-        return result
-
     def _wait_for_boot(self, timeout):
         while True:
             rsp = self._interface.recv(timeout)
@@ -384,9 +494,15 @@ class Module(object):
             pass
         ready = MSG_program_ack(rsp)
 
-    def _erase(self):
-        print("ERASE...")
-        self._cmd(MSG_erase())
+    def _print_progress(self, title, limit, position):
+        scale = 60 / limit
+        hashes = math.ceil(position * scale)
+        bar = '#' * hashes + '.' * (60 - hashes)
+        print(f'\r{title:<8} [{bar}]', end='')
+        if position == limit:
+            print('')
+
+    def _erase_progress(self, title):
         while True:
             rsp = self._interface.recv(2)
             if rsp is None:
@@ -397,50 +513,116 @@ class Module(object):
             except MessageError as e:
                 raise ModuleError(f'got unexpected message {rsp} '
                                   f'instead of progress')
-            bar = '#' * progress.progress + ' ' * (progress.limit -
-                                                   progress.progress)
-            print(f'\r[{bar}]', end='')
-        print('\n')
+            self._print_progress(title, progress.limit, progress.progress)
+            if progress.progress == progress.limit:
+                break
+
+    def _erase(self):
+        self._interface.send(MSG_erase())
+        self._erase_progress("ERASE ")
+        self._erase_progress("ERASE2")
+        rsp = self._interface.recv(2)
+        if rsp is None:
+            raise ModuleError('did not see expected module '
+                              'erase completed message')
+        try:
+            progress = MSG_erase_done(rsp)
+        except MessageError as e:
+            raise ModuleError(f'got unexpected message {rsp} '
+                              f'instead erase done')
+
+    def _program(self, srecords):
+        progress = 0
+        scale = 50 / len(srecords.lines)
+        for srec in srecords.lines:
+            for index in range(0, len(srec), 8):
+                rsp = self._cmd(MSG_srecord(srec[index:index+8]))
+            if rsp is None:
+                raise ModuleError(f'timed out waiting for response')
+
+            self._print_progress("FLASH", len(srecords.lines), progress)
+            progress += 1
+
+            if rsp.data[0] != 0:
+                raise ModuleError(f'module rejected S-record')
+            try:
+                ack = MSG_srecords_done(rsp)
+                log(f'DONE: {rsp}')
+                print('')
+                return
+            except MessageError:
+                continue
+        raise ModuleError(f'expected S-record end OK message, but not received'
+                          f' - check S-records for S9 at end')
 
     def upload(self, srecords):
         self._enter_flash_mode()
-        #self._erase()
+        self._erase()
+        self._program(srecords)
 
     def get_eeprom(self):
         self._select()
         return self._read_eeprom(0, 0x800)
 
+    def get_eeprom_properties(self):
+        contents = self.get_eeprom()
+        (_, magic) = struct.unpack(">HH", contents[0:4])
+        if magic != EEPROM_STARTKENNER:
+            print(f'WARNING: EEPROM magic number incorrect ({magic})')
+        offset = 0
+        properties = dict()
+        for fmt, name in EEPROM_MAP:
+            field_len = struct.calcsize(fmt)
+            value = struct.unpack(fmt, contents[offset:offset+field_len])
+            if fmt[-1] == 's':
+                value = value[0].decode('ascii')
+            elif len(value) == 1:
+                value = value[0]
+            offset += field_len
+            if name is not None:
+                properties[name] = value
+        return properties
+
+    def erase(self):
+        self._enter_flash_mode()
+        self._erase()
+
 
 def find_module_id(interface, args):
     if args.module_id is not None:
         return args.module_id
-    ids = interface.scan()
-    if len(ids) == 0:
+    modules = interface.scan()
+    if len(modules) == 0:
         raise RuntimeError('no modules detected')
-    elif len(ids) > 1:
+    elif len(modules) > 1:
         raise RuntimeError('more than one module detected, '
                            'must supply --module-id')
     else:
-        return ids[0]
+        return list(modules.keys())[0]
 
 
 def do_scan(interface, args):
-    if args.module_id is None:
-        ids = interface.scan()
-        if len(ids) > 0:
-            print('ID     TYPE                 NAME'
-                  '                           VERSION')
-    else:
-        ids = [args.module_id]
-
-    if len(ids) > 0:
-        for module_id in ids:
-            info = Module(interface, module_id, args).identify()
+    modules = interface.scan()
+    if len(modules) > 0:
+        print(f'{"ID":<6} '
+              f'{"STATUS":8} '
+              f'{"TYPE":20} '
+              f'{"NAME":30} '
+              f'{"VERSION":8}')
+        for module_id, info in modules.items():
+            module = Module(interface, module_id, args)
+            properties = module.get_eeprom_properties()
+            try:
+                status = STATUS_MAP[info['status']]
+            except KeyError:
+                status = 'UNKNOWN'
 
             print(f'{module_id:<6} '
-                  f'{info["product_name"]:20} '
-                  f'{info["user_name"]:30} '
-                  f'{info["user_version"]:20}')
+                  f'{status:<8} '
+                  f'{properties["Bezeichnung"]:<20} '
+                  f'{properties["Modulname"]:<30} '
+                  f'{properties["SW_Version"]:<8} '
+                  )
 
 
 def do_upload(interface, args):
@@ -455,6 +637,19 @@ def do_eeprom_dump(interface, args):
     module = Module(interface, module_id, args)
     contents = module.get_eeprom()
     print(contents)
+
+
+def do_eeprom_decode(interface, args):
+    module_id = find_module_id(interface, args)
+    module = Module(interface, module_id, args)
+    properties = module.get_eeprom_properties()
+    for name, value in properties.items():
+        print(f'{name:<30} {value}')
+
+def do_erase(interface, args):
+    module_id = find_module_id(interface, args)
+    module = Module(interface, module_id, args)
+    module.erase()
 
 
 parser = argparse.ArgumentParser(description='MRS Microplex 7* CAN flasher')
@@ -492,6 +687,12 @@ actiongroup.add_argument('--scan',
 actiongroup.add_argument('--dump-eeprom',
                          action='store_true',
                          help='dump the contents of the module EEPROM')
+actiongroup.add_argument('--decode-eeprom',
+                         action='store_true',
+                         help='decode the contents of the module EEPROM')
+actiongroup.add_argument('--erase',
+                         action='store_true',
+                         help='erase the program')
 
 
 args = parser.parse_args()
@@ -507,5 +708,9 @@ if args.scan:
     do_scan(interface, args)
 elif args.dump_eeprom:
     do_eeprom_dump(interface, args)
+elif args.decode_eeprom:
+    do_eeprom_decode(interface, args)
+elif args.erase:
+    do_erase(interface, args)
 elif args.upload is not None:
     do_upload(interface, args)
