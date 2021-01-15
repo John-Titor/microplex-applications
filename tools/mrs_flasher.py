@@ -5,6 +5,7 @@
 
 import argparse
 import struct
+import time
 from pathlib import Path
 import can
 
@@ -17,8 +18,8 @@ DATA_ID = 0x1ffffff4
 EEPROM_STARTKENNER = 1331
 EEPROM_MAP = [
     # (format, name)
-    ('>H',  None),
-    ('>H',  None),  # 'Startkenner'
+    # ('2B' '??'),
+    # ('>H' 'Startkenner'),
     ('>I',  'Seriennummer'),
     ('12s', 'Teilenummer'),
     ('12s', 'Zeichnungsnummer'),
@@ -50,11 +51,6 @@ EEPROM_MAP = [
     ('>H',  'COP_WD_Timeout'),
     ('7B',  None)  # 'Bootloader_Configdaten_Reserve1'
 ]
-
-STATUS_MAP = {
-    0: 'OK',
-    4: 'NO PROG'
-}
 
 
 class MessageError(Exception):
@@ -166,52 +162,38 @@ class RXMessage(object):
         return struct.calcsize(self._format)
 
 
-class MSG_boot(RXMessage):
-    """unsolicited broadcast sent by module at power-on"""
-    _format = '>BBBHBH'
-    _filter = [(True, 0x01),
-               (True, 0),
-               (True, 0),
-               (False, 0),
-               (False, 0),
-               (False, 0)]
-
-    def __init__(self, raw):
-        super().__init__(expected_id=ACK_ID,
-                         raw=raw)
-        (_, _, _, self.module_id, self.status, self.sw_version) = self._values
-
-
-class MSG_reboot(RXMessage):
-    """unsolicited broadcast sent by module when rebooting"""
-    _format = '>BBBHBH'
-    _filter = [(True, 0x41),
-               (True, 0),
-               (True, 0),
-               (False, 0),
-               (False, 0),
-               (False, 0)]
-
-    def __init__(self, raw):
-        super().__init__(expected_id=ACK_ID,
-                         raw=raw)
-        (_, _, _, self.module_id, status, self.sw_version) = self._values
-
-
 class MSG_ack(RXMessage):
-    """response to MSG_ping sent by every module"""
+    """broadcast message sent by module on power-up, reboot or crash"""
     _format = '>BBBHBH'
-    _filter = [(True, 0x00),
+    _filter = [(False, 0),
                (True, 0),
                (True, 0),
                (False, 0),
                (False, 0),
                (False, 0)]
+    REASON_MAP = {
+        0x00: 'power-on',
+        0x41: 'reboot',
+        0x51: 'crashed'
+    }
+    STATUS_MAP = {
+        0: 'OK',
+        4: 'NO PROG'
+    }
 
     def __init__(self, raw):
         super().__init__(expected_id=ACK_ID,
                          raw=raw)
-        (_, _, _, self.module_id, self.status, self.sw_version) = self._values
+        (self.reason_code, _, _,
+         self.module_id, self.status_code, self.sw_version) = self._values
+        try:
+            self.reason = self.REASON_MAP[self.reason_code]
+        except KeyError:
+            self.reason = 'unknown'
+        try:
+            self.status = self.STATUS_MAP[self.status_code]
+        except KeyError:
+            self.status = "unknown"
 
 
 class MSG_selected(RXMessage):
@@ -237,8 +219,8 @@ class MSG_selected(RXMessage):
 class MSG_program_nak(RXMessage):
     """
     Response sent to MSG_program when the app is running.
-    Module reboots after sending this message (and sends MSG_boot),
-    apparently into the bootloader.
+    Module reboots after sending this message (and sends MSG_ack
+    with reason='reboot'), apparently into the bootloader.
     """
     _format = '>HBBHH'
     _filter = [(True, 0x2fff),
@@ -382,8 +364,9 @@ class CANInterface(object):
 
     def scan(self):
         """send the all-call message and collect replies"""
-        self.send(MSG_ping())
         modules = dict()
+        scan_end_time = time.time() + 3
+        self.send(MSG_ping())
         while True:
             rsp = self.recv(1)
             if rsp is not None:
@@ -394,8 +377,11 @@ class CANInterface(object):
                                        'on CAN bus during scan')
                 modules[ack.module_id] = {
                     'status': ack.status,
+                    'reason': ack.reason,
                     'sw_ver': ack.sw_version
                 }
+            elif time.time() < scan_end_time:
+                self.send(MSG_ping())
             else:
                 break
         return modules
@@ -440,7 +426,8 @@ class Srecords(object):
                 continue
 
             # first two bytes to send are ascii, remainder are literals
-            self.lines.append(bytearray(line[0:2], 'ascii') + bytes.fromhex(line[2:]))
+            self.lines.append(bytearray(line[0:2], 'ascii')
+                              + bytes.fromhex(line[2:]))
 
 
 class Module(object):
@@ -484,7 +471,11 @@ class Module(object):
             if rsp is None:
                 raise ModuleError('did not see module reboot message')
             try:
-                boot_message = MSG_reboot(rsp)
+                boot_message = MSG_ack(rsp)
+                if boot_message.module_id != self.module_id:
+                    continue
+                if boot_message.reason != 'reboot':
+                    continue
                 break
             except MessageError:
                 pass
@@ -578,15 +569,17 @@ class Module(object):
 
     def get_eeprom_properties(self):
         """decode EEPROM contents"""
-        contents = self.get_eeprom()
-        (_, magic) = struct.unpack(">HH", contents[0:4])
+        self._select()
+        header = self._read_eeprom(2, 2)
+        (magic,) = struct.unpack(">H", header)
         if magic != EEPROM_STARTKENNER:
             print(f'WARNING: EEPROM magic number incorrect ({magic})')
-        offset = 0
+        offset = 4
         properties = dict()
         for fmt, name in EEPROM_MAP:
             field_len = struct.calcsize(fmt)
-            value = struct.unpack(fmt, contents[offset:offset+field_len])
+            bytes = self._read_eeprom(offset, field_len)
+            value = struct.unpack(fmt, bytes)
             if fmt[-1] == 's':
                 value = value[0].decode('ascii')
             elif len(value) == 1:
@@ -625,24 +618,35 @@ def do_scan(interface, args):
     if len(modules) > 0:
         print(f'{"ID":<6} '
               f'{"STATUS":8} '
+              f'{"REASON":8} '
               f'{"TYPE":20} '
               f'{"NAME":30} '
               f'{"VERSION":8}')
         for module_id, info in modules.items():
             module = Module(interface, module_id, args)
             properties = module.get_eeprom_properties()
-            try:
-                status = STATUS_MAP[info['status']]
-            except KeyError:
-                status = 'UNKNOWN'
 
             print(f'{module_id:<6} '
-                  f'{status:<8} '
+                  f'{info["status"]:<8} '
+                  f'{info["reason"]:<8} '
                   f'{properties["Bezeichnung"]:<20} '
                   f'{properties["Modulname"]:<30} '
                   f'{properties["SW_Version"]:<8} '
                   )
 
+
+def do_monitor(interface, args):
+    while True:
+        try:
+            msg = interface.recv(1)
+            if msg is not None:
+                try:
+                    ack = MSG_ack(msg)
+                    print(f'{ack.module_id}: {ack.reason}')
+                except MessageError:
+                    pass
+        except KeyboardInterrupt:
+            break
 
 def do_upload(interface, args):
     """implement the --upload option"""
@@ -707,6 +711,9 @@ actiongroup.add_argument('--upload',
 actiongroup.add_argument('--scan',
                          action='store_true',
                          help='scan for connected modules')
+actiongroup.add_argument('--monitor',
+                         action='store_true',
+                         help='watch for module status announcements')
 actiongroup.add_argument('--dump-eeprom',
                          action='store_true',
                          help='dump the contents of the module EEPROM')
@@ -729,6 +736,8 @@ else:
 interface = CANInterface(args)
 if args.scan:
     do_scan(interface, args)
+if args.monitor:
+    do_monitor(interface, args)
 elif args.dump_eeprom:
     do_eeprom_dump(interface, args)
 elif args.decode_eeprom:
