@@ -344,8 +344,16 @@ class CANInterface(object):
         ])
 
         # flush any buffered messages we don't want to see
-        while self._bus.recv(0) is not None:
-            pass
+        except_count = 0
+        while True:
+            try:
+                if self._bus.recv(0) is None:
+                    break
+            except Exception:
+                except_count += 1
+                if except_count > 5:
+                    raise RuntimeError('too many exceptions trying to '
+                                       'drain CAN buffer')
         log(self._bus.state)
 
     def send(self, message):
@@ -353,7 +361,7 @@ class CANInterface(object):
         log(f'CAN TX: {message}')
         self._bus.send(message, 1)
 
-    def recv(self, timeout=10):
+    def recv(self, timeout=2):
         """wait for a message"""
         try:
             msg = self._bus.recv(timeout)
@@ -363,12 +371,20 @@ class CANInterface(object):
         return msg
 
     def scan(self):
-        """send the all-call message and collect replies"""
+        """
+        Send the all-call message and collect replies.
+
+        We spam the message for a while at a short interval
+        and collect / de-duplicate replies. If a module is in
+        a crashloop it may not respond to the first ping, but
+        in theory we'll catch it in the bootloader eventually.
+        """
+        print('Scanning...')
         modules = dict()
-        scan_end_time = time.time() + 3
+        scan_end_time = time.time() + 1.0
         self.send(MSG_ping())
         while True:
-            rsp = self.recv(1)
+            rsp = self.recv(0.05)
             if rsp is not None:
                 try:
                     ack = MSG_ack(rsp)
@@ -441,8 +457,7 @@ class Module(object):
         self._interface.send(message)
         rsp = self._interface.recv()
         if rsp is None:
-            raise ModuleError(f'sent 0x{arbid:x}:{data} '
-                              f'but timed out waiting for a reply')
+            raise ModuleError(f'timed out waiting for a reply to {message} ')
         return rsp
 
     def _select(self):
@@ -472,7 +487,7 @@ class Module(object):
                 raise ModuleError('did not see module reboot message')
             try:
                 boot_message = MSG_ack(rsp)
-                if boot_message.module_id != self.module_id:
+                if boot_message.module_id != self._module_id:
                     continue
                 if boot_message.reason != 'reboot':
                     continue
@@ -594,17 +609,53 @@ class Module(object):
         self._enter_flash_mode()
         self._erase()
 
+    def x(self):
+        """hacking"""
+        while True:
+            self._interface.send(MSG_ping())
+            rsp = self._interface.recv(0.02)
+
+
+def recover_module(interface, args):
+    if args.module_id is None:
+        print('Waiting for module power-up message...')
+    else:
+        print(f'Waiting for module {args.module_id} power-up message')
+    while True:
+        msg = interface.recv()
+        if msg is not None:
+            try:
+                ack = MSG_ack(msg)
+                if args.module_id is not None:
+                    if args.module_id != ack.module_id:
+                        continue
+                return ack.module_id
+            except MessageError:
+                pass
+
 
 def find_module_id(interface, args):
     """
     Decide on a module; either one explicitly identified on the
     commandline, or if there is only one connected module, that one.
+
+    If recovery mode is enabled, wait for either a specific module,
+    or any module, to sign on.
     """
+
+    # handle recovery mode request
+    if args.recover:
+        return recover_module(interface, args)
+
+    # not recovering, and specific module ID supplied, use that
     if args.module_id is not None:
         return args.module_id
+
+    # no module ID specified, scan the bus and if there's exactly
+    # one connected, use that one
     modules = interface.scan()
     if len(modules) == 0:
-        raise RuntimeError('no modules detected')
+        raise RuntimeError('no modules detected, maybe try --recover')
     elif len(modules) > 1:
         raise RuntimeError('more than one module detected, '
                            'must supply --module-id')
@@ -648,11 +699,12 @@ def do_monitor(interface, args):
         except KeyboardInterrupt:
             break
 
+
 def do_upload(interface, args):
     """implement the --upload option"""
+    srecords = Srecords(args.upload, args)
     module_id = find_module_id(interface, args)
     module = Module(interface, module_id, args)
-    srecords = Srecords(args.upload, args)
     module.upload(srecords)
 
 
@@ -672,11 +724,18 @@ def do_eeprom_decode(interface, args):
     for name, value in properties.items():
         print(f'{name:<30} {value}')
 
+
 def do_erase(interface, args):
     """implement the --erase option"""
     module_id = find_module_id(interface, args)
     module = Module(interface, module_id, args)
     module.erase()
+
+
+def do_x(interface, args):
+    module_id = find_module_id(interface, args)
+    module = Module(interface, module_id, args)
+    module.x()
 
 
 parser = argparse.ArgumentParser(description='MRS Microplex 7* CAN flasher')
@@ -699,6 +758,10 @@ parser.add_argument('--module-id',
                     type=int,
                     metavar='MODULE_ID',
                     help='specific module ID to program')
+parser.add_argument('--recover',
+                    action='store_true',
+                    help='wait for a bricked module to '
+                         'be connected / powered up')
 parser.add_argument('--verbose',
                     action='store_true',
                     help='print verbose progress information')
@@ -723,6 +786,9 @@ actiongroup.add_argument('--decode-eeprom',
 actiongroup.add_argument('--erase',
                          action='store_true',
                          help='erase the program')
+actiongroup.add_argument('--x',
+                         action='store_true',
+                         help='test function')
 
 
 args = parser.parse_args()
@@ -734,6 +800,8 @@ else:
         pass
 
 interface = CANInterface(args)
+if args.x:
+    do_x(interface, args)
 if args.scan:
     do_scan(interface, args)
 if args.monitor:
