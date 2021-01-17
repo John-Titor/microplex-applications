@@ -138,6 +138,7 @@ _DO_PIN(CAN_STB_N,      F, 2, 1, _DO_SLOW, _DO_WEAK);
 static inline void
 board_init()
 {
+    chip_init();
     init_DI_CAN_ERR();
     init_FREQ_1();
     init_CAN_EN();

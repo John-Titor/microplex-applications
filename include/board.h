@@ -34,6 +34,15 @@ static const inline void init_ ## _name ()                      \
     _PT ## _port ## DS.Bits.PT ## _port ## DS ## _pin = _strong;\
 } struct hack
 
+static inline void
+chip_init()
+{
+	_SOPT1.Byte = 0xe0; // STOPE | COPT0 | COPT1
+	_SOPT2.Byte = 0;
+	_SPMSC1.Byte = 0x1d; // LVDRE | LVDSE | LVDE | BGBE;
+	_SPMSC2.Byte = 0x30; // LVDV | LVWV
+}
+
 #ifdef BOARD_MICROPLEX_7X
 #include "Microplex_7X.h"
 #else
