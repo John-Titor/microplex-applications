@@ -71,6 +71,7 @@ LD		 =	sdcc -ms08
 INCLUDES	 =	$(SRCROOT)/include
 CFLAGS		+=	$(addprefix -I,$(INCLUDES))
 DEPFLAGS	 =	-MM $(CFLAGS)
+SREC_FIXUP	 =	$(SRCROOT)/tools/fix_srecords.py
 
 #
 # Non-optional library modules
@@ -104,6 +105,7 @@ $(PRODUCT_SREC):	$(OBJS)
 	@echo LD $@
 	@mkdir -p $(@D)
 	$(v)$(LD) $(LDFLAGS) -o $@ $(OBJS)
+	$(SREC_FIXUP) $@ || rm -f $@
 
 $(OBJROOT)/%.rel: $(PRODUCT_DIR)/%.c
 	@mkdir -p $(@D)

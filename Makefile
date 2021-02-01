@@ -10,7 +10,7 @@ ACTIONS		 = build clean flash
 #
 # Locate the root of the source tree.
 #
-export SRCROOT	:= $(dir $(lastword $(MAKEFILE_LIST)))
+export SRCROOT	:= $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
 #
 # Things we will try to build

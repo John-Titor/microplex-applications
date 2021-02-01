@@ -4,6 +4,13 @@
 
 #include <board.h>
 
+// Handler for nonexistent vector 32 is patched in as the
+// default handler for vectors that aren't assigned.
+void default_handler() __interrupt(32)
+{
+    for(;;);
+}
+
 void
 main()
 {

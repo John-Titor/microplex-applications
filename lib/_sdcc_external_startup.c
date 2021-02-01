@@ -5,8 +5,6 @@
 #include <stdint.h>
 #include <mc9s08dz60.h>
 
-#include <interrupt.h>
-
 void
 _sdcc_external_startup()
 {
@@ -84,12 +82,4 @@ _sdcc_external_startup()
 //    2250 26 f8           BNE        LAB_224a
     while ((_MCGSC.Byte & 0x0c) != 0x0c) {
     }
-
 }
-
-// Make sure there's a thunk for the entrypoint, as the ROM won't 
-// run the program otherwise...
-// Annoyingly, there's no global symbol, so we have to know the magic
-// entrypoint address.
-//
-ENTRY(0x2200);
