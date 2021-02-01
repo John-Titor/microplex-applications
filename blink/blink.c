@@ -7,7 +7,16 @@
 void
 main()
 {
-    board_init();
-    set_DO_HSD_1(1);
-    for (;;);
+    __RESET_WATCHDOG();
+
+    // configure port D
+    _PTDDD.Byte = 0xf0;
+    _PTDD.Byte = 0xf0;
+
+    for (;;) {
+        __RESET_WATCHDOG();
+        for (short i = 0; i < 20000; i++);
+    }
 }
+
+

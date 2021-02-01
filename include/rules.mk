@@ -73,6 +73,11 @@ CFLAGS		+=	$(addprefix -I,$(INCLUDES))
 DEPFLAGS	 =	-MM $(CFLAGS)
 
 #
+# Non-optional library modules
+#
+LIB_MODULES	+=	_sdcc_external_startup
+
+#
 # Assembly source/objects must come first to ensure startup files
 # can be in front.
 #
