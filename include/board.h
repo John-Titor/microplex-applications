@@ -7,6 +7,12 @@
 
 #include "mc9s08dz60.h"
 
+//////////////////////////////////////////////////////////////////////
+// declare a digital input & helper functions
+//
+#define _DI_PULL_UP     1
+#define _DI_NO_PULL     0
+
 #define _DI_PIN(_name, _port, _pin, _pull)                      \
 static const inline bool test_ ## _name ()                      \
 {                                                               \
@@ -18,8 +24,13 @@ static const inline void init_ ## _name ()                      \
     _PT ## _port ## PE.Bits.PT ## _port ## PE ## _pin = _pull;  \
 } struct hack
 
-#define _DI_PULL_UP     1
-#define _DI_NO_PULL     0
+//////////////////////////////////////////////////////////////////////
+// declare a digital output & helper functions
+//
+#define _DO_FAST        0
+#define _DO_SLOW        1
+#define _DO_WEAK        0
+#define _DO_STRONG      1
 
 #define _DO_PIN(_name, _port, _pin, _default, _slow, _strong)   \
 static const inline void set_ ## _name (bool _v)                \
@@ -34,14 +45,6 @@ static const inline void init_ ## _name ()                      \
     _PT ## _port ## DS.Bits.PT ## _port ## DS ## _pin = _strong;\
 } struct hack
 
-static inline void
-chip_init()
-{
-	_SOPT1.Byte = 0xe0; // STOPE | COPT0 | COPT1
-	_SOPT2.Byte = 0;
-	_SPMSC1.Byte = 0x1d; // LVDRE | LVDSE | LVDE | BGBE;
-	_SPMSC2.Byte = 0x30; // LVDV | LVWV
-}
 
 #ifdef BOARD_MICROPLEX_7X
 #include "Microplex_7X.h"

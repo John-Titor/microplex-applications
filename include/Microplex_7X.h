@@ -72,12 +72,23 @@
  * DO_30V_10V_2     PORT_E.0    -   AI_2 scale select: 0 = 0-10V, 1 = 0-30V
  * DO_30V_10V_3     PORT_A.4    -   AI_3 scale select: 0 = 0-10V, 1 = 0-30V
  * CAN_STB_N        PORT_F.2    -   CAN transceiver STB
+ * AI_1             PORT_B.5    2   Analog 1 / Frequency input 1
+ * AI_2             PORT_A.6    8   Analog 2
+ * AI_3             PORT_A.7    7   Analog 3
+ * AI_KL15
  *
  * PortA
  *
  * DO_20MA_2        PORT_A.3    -   20mA current sink mode for AI_2
  * DO_30V_10V_3     PORT_A.4    -   AI_3 scale select: 0 = 0-10V, 1 = 0-30V
  * DO_HSD_SEN       PORT_A.5    -   internal current sense select (STAT_DIS?)
+ * AI_2             PORT_A.6    8   Analog input 2
+ * AI_3             PORT_A.7    7   Analog input 3
+ *
+ * PortB
+ *
+ * AI_1             PORT_B.5    2   Analog input 1
+ * AI_KL15          PORT_B.6    6   KL15
  *
  * PortD
  *
@@ -129,13 +140,12 @@
  *    datasheet for other modes and the use of the CAN_WAKE signal.
  */
 
-#define _DO_FAST        0
-#define _DO_SLOW        1
-#define _DO_WEAK        0
-#define _DO_STRONG      1
-
 _DI_PIN(DI_CAN_ERR,     F, 3, _DI_NO_PULL);
 _DI_PIN(FREQ_1,         D, 2, _DI_NO_PULL);
+_DI_PIN(AI_1,           B, 5, _DI_NO_PULL);
+_DI_PIN(AI_2,           A, 6, _DI_NO_PULL);
+_DI_PIN(AI_3,           A, 7, _DI_NO_PULL);
+_DI_PIN(AI_KL15,        B, 6, _DI_NO_PULL);
 
 _DO_PIN(CAN_EN,         F, 0, 1, _DO_SLOW, _DO_WEAK);
 _DO_PIN(CAN_WAKE,       E, 5, 0, _DO_SLOW, _DO_WEAK);
@@ -153,6 +163,7 @@ _DO_PIN(DO_30V_10V_2,   E, 0, 0, _DO_SLOW, _DO_WEAK);
 _DO_PIN(DO_30V_10V_3,   A, 4, 0, _DO_SLOW, _DO_WEAK);
 _DO_PIN(CAN_STB_N,      F, 2, 1, _DO_SLOW, _DO_WEAK);
 
+// ADC channel assignments
 #define AI_1                13
 #define AI_2                6
 #define AI_3                7
@@ -166,16 +177,25 @@ _DO_PIN(CAN_STB_N,      F, 2, 1, _DO_SLOW, _DO_WEAK);
 #define AI_OP_3             8
 #define AI_OP_4             9
 
-#define PWM_IO1             2
-#define PWM_IO2             5
-#define PWM_IO3             3
-#define PWM_IO4             4
+// TPM1 channels corresponding to the HSD outputs
+#define PWM_HSD_1           2
+#define PWM_HSD_2           5
+#define PWM_HSD_3           3
+#define PWM_HSD_4           4
 
+// Initialize pins to suit the module.
+//
+// Note: analog inputs are configured as digital inputs
+//       by default.
+//
 static inline void
 board_init()
 {
-    chip_init();
     init_DI_CAN_ERR();
+    init_AI_1();
+    init_AI_2();
+    init_AI_3();
+    init_AI_KL15();
     init_FREQ_1();
     init_CAN_EN();
     init_CAN_WAKE();
