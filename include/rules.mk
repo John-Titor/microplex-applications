@@ -40,7 +40,8 @@ endif
 #
 CFLAGS		+=	-DBOARD_$(BOARD) \
 			--stack-loc 0x107e \
-			--std-sdcc11
+			--std-sdcc11 \
+			$(addprefix -D,$(DEFINES))
 
 LDFLAGS		 =	--code-loc 0x2200 \
 			--data-loc 0x0080 \
@@ -77,6 +78,7 @@ SREC_FIXUP	 =	$(SRCROOT)/tools/fix_srecords.py
 # Non-optional library modules
 #
 LIB_MODULES	+=	_sdcc_external_startup
+DEFINES		+=	$(addprefix WITH_,$(LIB_MODULES))
 
 #
 # Assembly source/objects must come first to ensure startup files
@@ -105,7 +107,7 @@ $(PRODUCT_SREC):	$(OBJS)
 	@echo LD $@
 	@mkdir -p $(@D)
 	$(v)$(LD) $(LDFLAGS) -o $@ $(OBJS)
-	$(SREC_FIXUP) $@ || rm -f $@
+	$(v)$(SREC_FIXUP) $@ || rm -f $@
 
 $(OBJROOT)/%.rel: $(PRODUCT_DIR)/%.c
 	@mkdir -p $(@D)
