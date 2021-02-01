@@ -1,3 +1,4 @@
 obj
 *.sublime-workspace
 *.s19
+.DS_Store

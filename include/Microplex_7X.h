@@ -1,5 +1,8 @@
 /*
- * Hardware defines for the Microplex 7X
+ * Hardware defines for the Microplex 7X, mostly obtained by
+ * digging through the sources supplied with the awful
+ * Microplex Studio app, with some reference to the (brief)
+ * datasheet PDF.
  *
  * SoC:                 MC9S08DZ60
  * CAN:                 TJA1043
@@ -28,27 +31,31 @@
  * ROM_BOOTLOADER          =  READ_ONLY    0xBE00 TO 0xFFBF;  
  * INTVECTS                =  READ_ONLY    0xFFC0 TO 0xFFFF;  
  *
- * pin      functions
+ * Pin              functions
+ * ---------------------------------------------------------------------------
  *
- * 1        ground
- * 2        AI_1, FREQ_1
- * 3        +12V
- * 4        CAN_L
- * 5        CAN_H
- * 6        AI_KL15
- * 7        AI_3
- * 8        AI_2
- * 9        DO_HSD_4, PWM_IO4, AI_OP_4
- * 10       DO_HSD_3, PWM_IO3, AI_OP_3
- * 11       DO_HSD_2, PWM_IO2, AI_OP_2
- * 12       DO_HSD_1, PWM_IO1, AI_OP_1
+ * 1                ground
+ * 2                AI_1, FREQ_1
+ * 3                +12V
+ * 4                CAN_L
+ * 5                CAN_H
+ * 6                AI_KL15
+ * 7                AI_3
+ * 8                AI_2
+ * 9                DO_HSD_4, PWM_IO4, AI_OP_4
+ * 10               DO_HSD_3, PWM_IO3, AI_OP_3
+ * 11               DO_HSD_2, PWM_IO2, AI_OP_2
+ * 12               DO_HSD_1, PWM_IO1, AI_OP_1
  *
- * digital inputs   port        pin
+ * Digital inputs   port        pin
+ * ---------------------------------------------------------------------------
  *
  * DI_CAN_ERR       PORT_F.3    -
  * FREQ_1           PORT_D.2    2
  *
- * digital outputs  port        pin
+ * Digital outputs  port        pin
+ * ---------------------------------------------------------------------------
+ * By function
  *
  * CAN_EN           PORT_F.0    -   CAN transceiver EN
  * CAN_WAKE         PORT_E.5    -   CAN transceiver WAKE
@@ -61,12 +68,40 @@
  * DO_HSD_4         PORT_D.6    9
  * DO_HSD_SEN       PORT_A.5    -   internal current sense select (STAT_DIS?)
  * DO_POWER         PORT_E.2    -   keep-alive when KL15 is removed
- * DO_30V_10V_1     PORT_F.5    -   AI_1/2/3 scale select: 
- * DO_30V_10V_2     PORT_E.0    -     0 = 0-10V
- * DO_30V_10V_3     PORT_A.4    -     1 = 0-30V
+ * DO_30V_10V_1     PORT_F.5    -   AI_1 scale select: 0 = 0-10V, 1 = 0-30V
+ * DO_30V_10V_2     PORT_E.0    -   AI_2 scale select: 0 = 0-10V, 1 = 0-30V
+ * DO_30V_10V_3     PORT_A.4    -   AI_3 scale select: 0 = 0-10V, 1 = 0-30V
  * CAN_STB_N        PORT_F.2    -   CAN transceiver STB
  *
- * analog inputs    ADC chan    pin
+ * PortA
+ *
+ * DO_20MA_2        PORT_A.3    -   20mA current sink mode for AI_2
+ * DO_30V_10V_3     PORT_A.4    -   AI_3 scale select: 0 = 0-10V, 1 = 0-30V
+ * DO_HSD_SEN       PORT_A.5    -   internal current sense select (STAT_DIS?)
+ *
+ * PortD
+ *
+ * DO_20MA_1        PORT_D.0    -   20mA current sink mode for AI_1
+ * AI_3_PU          PORT_D.3    -   1k pullup on AI_3
+ * DO_HSD_1         PORT_D.4    12
+ * DO_HSD_3         PORT_D.5    10
+ * DO_HSD_4         PORT_D.6    9
+ * DO_HSD_2         PORT_D.7    11
+ *
+ * PortE
+ *
+ * DO_30V_10V_2     PORT_E.0    -   AI_2 scale select: 0 = 0-10V, 1 = 0-30V
+ * DO_POWER         PORT_E.2    -   keep-alive when KL15 is removed
+ * CAN_WAKE         PORT_E.5    -   CAN transceiver WAKE
+ *
+ * PortF
+ *
+ * CAN_EN           PORT_F.0    -   CAN transceiver EN
+ * CAN_STB_N        PORT_F.2    -   CAN transceiver STB
+ * DO_30V_10V_1     PORT_F.5    -   AI_1 scale select: 0 = 0-10V, 1 = 0-30V
+ *
+ * Analog inputs    ADC chan    pin
+ * ---------------------------------------------------------------------------
  *
  * AI_1             13          2
  * AI_2             6           8
@@ -82,6 +117,7 @@
  * AI_OP_4          9           9   DO_HSD_4 voltage
  *
  * PWM outputs      timer channel   digital pin
+ * ---------------------------------------------------------------------------
  * 
  * PWM_IO1          2               DO_HSD_1
  * PWM_IO2          5               DO_HSD_2
