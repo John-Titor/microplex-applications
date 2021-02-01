@@ -107,6 +107,7 @@ $(PRODUCT_SREC):	$(OBJS)
 	@echo LD $@
 	@mkdir -p $(@D)
 	$(v)$(LD) $(LDFLAGS) -o $@ $(OBJS)
+	@echo `grep '^CSEG' obj/MICROPLEX_7X/blink/blink.map | cut -c 66-70`/36219 bytes used
 	$(v)$(SREC_FIXUP) $@ || rm -f $@
 
 $(OBJROOT)/%.rel: $(PRODUCT_DIR)/%.c
