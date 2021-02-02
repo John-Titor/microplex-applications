@@ -2,7 +2,9 @@
  * Simple pin-blink test for Microplex 7X
  */
 
+#include <stdio.h>
 #include <stdlib.h>
+
 #include <board.h>
 #include <mscan.h>
 
@@ -11,6 +13,9 @@
 // aren't assigned.
 void default_handler() __interrupt(32)
 {
+    // try to send a panic message
+    CAN_puts("!badirq");
+
     // let the watchdog reset us
     for(;;);
 }
@@ -25,16 +30,7 @@ main()
 
     // configure CAN
     CAN_init(CAN_BR_125, CAN_FM_NONE, NULL);
-
-    CAN_message msg = {
-        .id = {
-            .mscan_id = MSCAN_ID(0x123)
-        },
-        .data = { 0x01, 0x02 },
-        .dlc = 2,
-        .priority = 1
-    };
-    CAN_send(&msg);
+    puts("Multiplex 7X test firmware");
 
     // turn on HSD_1
     set_DO_HSD_1(true);
