@@ -4,6 +4,9 @@
  */
 
 #include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+
 #include <mc9s08dz60.h>
 #include <mscan.h>
 
@@ -14,6 +17,16 @@ static const uint8_t btr_table[][2] = {
     { 0x00, 0x1c }, // 500kHz
     { 0x00, 0x05 }  // 1MHz
 };
+
+typedef enum {
+    WM_NONE,
+    WM_SPACE,
+    WM_SENT
+} CAN_wait_mode;
+
+static bool _CAN_send(const CAN_message *msg,
+                      uint8_t channel_mask,
+                      CAN_wait_mode wait);
 
 void
 CAN_init(CAN_bitrate bitrate,
@@ -64,19 +77,58 @@ CAN_init(CAN_bitrate bitrate,
     }
 }
 
-bool CAN_send(const CAN_message *msg)
+bool
+CAN_send(const CAN_message *msg)
 {
-    uint8_t txe = 1;
-    
-    // which tx buffer are we able to use?
-    if (!(_CANTFLG.Byte & txe)) {
-        txe <<= 1;
-        if (!(_CANTFLG.Byte & txe)) {
-            txe <<= 1;
-            if (!(_CANTFLG.Byte & txe)) {
-                return false;
-            }
+    // Use channels 0 & 1, return false if not
+    // possible to send immediately.
+    return _CAN_send(msg, 0x7, WM_NONE);
+}
+
+void
+CAN_send_blocking(const CAN_message *msg)
+{
+    // Use channels 0 & 1, wait for space and
+    // wait for message to be sent.
+    _CAN_send(msg, 0x7, WM_SPACE);
+}
+
+void
+CAN_send_debug(const CAN_message *msg)
+{
+    // Use channel 2, wait for space and wait
+    // for message to be sent - debug messages
+    // are thus sent in the order they are
+    // queued.
+    _CAN_send(msg, 0x4, WM_SENT);
+}
+
+static bool
+_CAN_send(const CAN_message *msg,
+          uint8_t channel_mask,
+          CAN_wait_mode wait_mode)
+{
+    uint8_t txe;
+
+    // spin (or don't) looking for an available channel
+    for (;;) {
+        txe = 1;
+        uint8_t avail = _CANTFLG.Byte & channel_mask;
+        if (avail & txe) {
+            break;
         }
+        txe = 2;
+        if (avail & txe) {
+            break;
+        }
+        txe = 4;
+        if (avail & txe) {
+            break;
+        }
+        if (wait_mode == WM_NONE) {
+            return false;
+        }
+        break;
     }
 
     // map the buffer
@@ -101,11 +153,66 @@ bool CAN_send(const CAN_message *msg)
     // mark the buffer as not-empty to start transmission
     _CANTFLG.Byte = txe;
 
+    // wait for message to send
+    while ((wait_mode == WM_SENT) && !(_CANTFLG.Byte & txe)) {
+    }
     return true;
 }
 
-bool CAN_recv(CAN_message *msg)
+bool
+CAN_recv(CAN_message *msg)
 {
     (void)msg;
     return false;
+}
+
+void
+CAN_puts(const char *str)
+{
+    CAN_message msg = {
+        .id = { .mscan_id = MSCAN_ID_EXT(0x1ffffffe) },
+        .priority = 0
+    };
+
+    for (;;) {
+        msg.dlc = 0;
+        for (;;) {
+            msg.data[msg.dlc++] = *str;
+            if ((msg.dlc == 8) || (*str == '\0')) {
+                while (!CAN_send(&msg)) {
+                    // spin until it can be sent
+                }
+                msg.priority++;
+                break;
+            }
+            str++;
+        }
+        if (*str == '\0') {
+            break;
+        }
+    }
+}
+
+int
+putchar(int c)
+{
+    static CAN_message msg = {
+        .id = { .mscan_id = MSCAN_ID_EXT(0x1ffffffe) },
+        .dlc = 0,
+        .priority = 128
+    };
+
+    // send newline as NUL terminator
+    if (c != '\n') {
+        msg.data[msg.dlc++] = c;
+    } else {
+        msg.data[msg.dlc++] = '\0';
+    }
+
+    // send message if full or newline
+    if ((c == '\n') || (msg.dlc == 8)) {
+        CAN_send_debug(&msg);
+        msg.dlc = 0;
+    }
+    return c;
 }
