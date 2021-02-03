@@ -17,19 +17,29 @@
 /*
  * Memory Map:
  *
- * Z_RAM                   =  READ_WRITE   0x0080 TO 0x00FF;  
- * RAM                     =  READ_WRITE   0x0100 TO 0x0E7E;  
- * RAM_TEST_RESULT_DEF     =  READ_WRITE   0x0E7F TO 0x0E7F;  
- * MY_STK                  =  NO_INIT      0x0E80 TO 0x107F;  
- * ROM1                    =  READ_ONLY    0x1080 TO 0x13FF;  
- * MCU_EEPROM              =  READ_ONLY    0x1400 TO 0x17FF;  
- * EE_FLASH                =  READ_ONLY    0x1900 TO 0x21FF;  
- * ROM                     =  READ_ONLY    0x2200 TO 0xAF7B;  
- * ROM_TEST_CRC_DEF        =  READ_ONLY    0xAF7C TO 0xAF7F;  
- * MY_JMP_VECTORS          =  READ_ONLY    0xAF80 TO 0xAFFF;  
- * ROM2                    =  READ_ONLY    0xB000 TO 0xBDFF;  
- * ROM_BOOTLOADER          =  READ_ONLY    0xBE00 TO 0xFFBF;  
- * INTVECTS                =  READ_ONLY    0xFFC0 TO 0xFFFF;  
+ * Z_RAM                   =  READ_WRITE   0x0080 TO 0x00FF;
+ * RAM                     =  READ_WRITE   0x0100 TO 0x0E7E;
+ * RAM_TEST_RESULT_DEF     =  READ_WRITE   0x0E7F TO 0x0E7F;
+ * MY_STK                  =  NO_INIT      0x0E80 TO 0x107F;
+ * ROM1                    =  READ_ONLY    0x1080 TO 0x13FF;
+ * MCU_EEPROM              =  READ_ONLY    0x1400 TO 0x17FF;
+ * EE_FLASH                =  READ_ONLY    0x1900 TO 0x21FF;
+ * ROM                     =  READ_ONLY    0x2200 TO 0xAF7B;
+ * ROM_TEST_CRC_DEF        =  READ_ONLY    0xAF7C TO 0xAF7F;
+ * MY_JMP_VECTORS          =  READ_ONLY    0xAF80 TO 0xAFFF;
+ * ROM2                    =  READ_ONLY    0xB000 TO 0xBDFF;
+ * ROM_BOOTLOADER          =  READ_ONLY    0xBE00 TO 0xFFBF;
+ * INTVECTS                =  READ_ONLY    0xFFC0 TO 0xFFFF;
+ *
+ *
+ * EEPROM magic numbers:
+ *
+ * PROG_Status:
+ *                  0xff00 - programmed: boot user app
+ *                  0xfe01 -
+ *                  0xfd02 -
+ *                  0xfc03 -
+ *                  0xfb04 - erased or no program: stay in bootloader
  *
  * Pin              functions
  * ---------------------------------------------------------------------------
