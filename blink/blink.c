@@ -21,6 +21,29 @@ void default_handler() __interrupt(32)
 }
 
 void
+dump_mem(uint16_t start, uint16_t end)
+{
+    for (uint32_t addr = start; addr < end; addr += 16) {
+        uint8_t *ptr = (uint8_t *)addr;
+        uint8_t sum = 0x13 + ((addr >> 8) & 0xff) + (addr & 0xff);
+        for (uint8_t i = 0; i < 16; i++) {
+            sum += ptr[i];
+        }
+        sum = ~sum;
+        printf("S113%04X"
+               "%02X%02X%02X%02X%02X%02X%02X%02X"
+               "%02X%02X%02X%02X%02X%02X%02X%02X"
+               "%02X\n",
+               (unsigned)addr,
+               ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5], ptr[6], ptr[7],
+               ptr[8], ptr[9], ptr[10], ptr[11], ptr[12], ptr[13], ptr[14], ptr[15],
+               sum);
+        __RESET_WATCHDOG();
+        for (uint32_t x = 0; x < 20000; x++) {}
+    }
+}
+
+void
 main()
 {
     __RESET_WATCHDOG();
@@ -30,6 +53,8 @@ main()
 
     // configure CAN
     CAN_init(CAN_BR_125, CAN_FM_NONE, NULL);
+
+    // Sign on; initial "X" gets eaten by the programmer
     puts("Multiplex 7X test firmware");
 
     // turn on HSD_1
