@@ -25,7 +25,6 @@ typedef enum {
 } CAN_wait_mode;
 
 static bool _CAN_send(const CAN_message *msg,
-                      uint8_t channel_mask,
                       CAN_wait_mode wait);
 
 void
@@ -80,59 +79,45 @@ CAN_init(CAN_bitrate bitrate,
 bool
 CAN_send(const CAN_message *msg)
 {
-    // Use channels 0 & 1, return false if not
-    // possible to send immediately.
-    return _CAN_send(msg, 0x7, WM_NONE);
+    // return false if not possible to send immediately.
+    return _CAN_send(msg, WM_NONE);
 }
 
 void
 CAN_send_blocking(const CAN_message *msg)
 {
-    // Use channels 0 & 1, wait for space and
-    // wait for message to be sent.
-    _CAN_send(msg, 0x7, WM_SPACE);
+    // wait for space to send message
+    _CAN_send(msg, WM_SPACE);
 }
 
 void
 CAN_send_debug(const CAN_message *msg)
 {
-    // Use channel 2, wait for space and wait
-    // for message to be sent - debug messages
-    // are thus sent in the order they are
+    // wait for space and wait for message to be sent -
+    // debug messages are thus sent in the order they are
     // queued.
-    _CAN_send(msg, 0x4, WM_SENT);
+    _CAN_send(msg, WM_SENT);
 }
 
 static bool
 _CAN_send(const CAN_message *msg,
-          uint8_t channel_mask,
           CAN_wait_mode wait_mode)
 {
     uint8_t txe;
 
-    // spin (or don't) looking for an available channel
-    for (;;) {
-        txe = 1;
-        uint8_t avail = _CANTFLG.Byte & channel_mask;
-        if (avail & txe) {
-            break;
-        }
-        txe = 2;
-        if (avail & txe) {
-            break;
-        }
-        txe = 4;
-        if (avail & txe) {
-            break;
-        }
+    // wait for a buffer to be free
+    while ((txe = _CANTFLG.Byte) == 0) {
+        // ... or don't
         if (wait_mode == WM_NONE) {
             return false;
         }
-        break;
-    }
+    }        
 
-    // map the buffer
+    // select the buffer
     _CANTBSEL.Byte = txe;
+
+    // read back to work out which one we actually selected
+    txe = _CANTBSEL.Byte;
 
     // copy message to buffer
     _CANTIDR0.Byte = msg->id.regs[0];
@@ -153,7 +138,7 @@ _CAN_send(const CAN_message *msg,
     // mark the buffer as not-empty to start transmission
     _CANTFLG.Byte = txe;
 
-    // wait for message to send
+    // wait for message to send, or don't
     while ((wait_mode == WM_SENT) && !(_CANTFLG.Byte & txe)) {
     }
     return true;
