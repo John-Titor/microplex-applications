@@ -1,5 +1,5 @@
 /*
- * Early HCS08 startup code; (re)initializes clocks, etc.
+ * Early HCS08 startup code.
  *
  * - 8MHz external crystal oscillator
  * - 40MHz MCGOUT (CPU clock)
@@ -17,23 +17,12 @@ _sdcc_external_startup()
 
     // Generic startup reversed from a trivial app
     //
-    // Writing SOPT1/2 seems pointless, as surely the ROM has already done this?
-
-    // set STOPE, 1s COP timeout, IIC on PTF2/3
-    _SOPT1.Byte = 0xe0;
-
-    // 1kHz COP clock, non-window mode, ADC on RTC overflow, MCLK disabled
-    _SOPT2.Byte = 0x00;
-
-    // set LVDRE, LVDSE, LVDE, BGBE; reset on low-voltage detect
-    _SPMSC1.Byte = 0x1d;
-
-    // LVD set for 5V mode
-    _SPMSC2.Byte = 0x30;
-
-    // copy MCG trim values from NVRAM
-    _MCGTRM.Byte = *(uint8_t *)0xffaf;
-    _MCGSC.Byte = *(uint8_t *)0xffae;
+    // SOPTx, SPMSCx and MCGCTRM are set by the ROM and
+    // can't be set here.
+    //
+    // The ROM de-configures the PLL before launching the
+    // user app, so we go through the process to set it
+    // back up again.
 
     // Enable external reference clock for 8MHz crystal,
     // enable MCGERCLK
