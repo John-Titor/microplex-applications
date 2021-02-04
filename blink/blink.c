@@ -8,6 +8,7 @@
 #include <adc.h>
 #include <board.h>
 #include <mscan.h>
+#include <pwm.h>
 #include <timer.h>
 
 // Handler for nonexistent vector 32 is patched in at
@@ -119,6 +120,9 @@ main()
     // configure the ADC
     adc_init();
     adc_configure(&adc_cfg);
+
+    // configure PWM
+    pwm_init(10);
 
     // configure CAN
     CAN_init(CAN_BR_125, CAN_FM_NONE, NULL);

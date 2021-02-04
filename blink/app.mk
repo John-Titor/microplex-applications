@@ -3,7 +3,7 @@
 #
 PRODUCT		 = blink
 PRODUCT_DIR	:= $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
-LIB_MODULES	 = mscan adc
+LIB_MODULES	 = mscan adc pwm
 
 BOARD		 = MICROPLEX_7X
 

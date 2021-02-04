@@ -58,8 +58,9 @@
  * Digital inputs   port        pin
  * ---------------------------------------------------------------------------
  *
- * DI_CAN_ERR       PORT_F.3    -
- * FREQ_1           PORT_D.2    2
+ * DI_CAN_ERR       PORT_F.3    -   CAN transceiver error signal
+ * FREQ_1           PORT_D.2    2   Frequency input (shares pin with AI_1)
+ *                                  also on TPM1C0
  *
  * Digital outputs  port        pin
  * ---------------------------------------------------------------------------
@@ -80,49 +81,11 @@
  * DO_30V_10V_2     PORT_E.0    -   AI_2 scale select: 0 = 0-10V, 1 = 0-30V
  * DO_30V_10V_3     PORT_A.4    -   AI_3 scale select: 0 = 0-10V, 1 = 0-30V
  * CAN_STB_N        PORT_F.2    -   CAN transceiver STB
- * AI_1             PORT_B.5    2   Analog 1 / Frequency input 1
- * AI_2             PORT_A.6    8   Analog 2
- * AI_3             PORT_A.7    7   Analog 3
- * AI_KL15
- *
- * PortA
- *
- * DO_20MA_2        PORT_A.3    -   20mA current sink mode for AI_2
- * DO_30V_10V_3     PORT_A.4    -   AI_3 scale select: 0 = 0-10V, 1 = 0-30V
- * DO_HSD_SEN       PORT_A.5    -   internal current sense select (STAT_DIS?)
- * AI_2             PORT_A.6    8   Analog input 2
- * AI_3             PORT_A.7    7   Analog input 3
- *
- * PortB
- *
- * AI_1             PORT_B.5    2   Analog input 1
- * AI_KL15          PORT_B.6    6   KL15
- *
- * PortD
- *
- * DO_20MA_1        PORT_D.0    -   20mA current sink mode for AI_1
- * AI_3_PU          PORT_D.3    -   1k pullup on AI_3
- * DO_HSD_1         PORT_D.4    12
- * DO_HSD_3         PORT_D.5    10
- * DO_HSD_4         PORT_D.6    9
- * DO_HSD_2         PORT_D.7    11
- *
- * PortE
- *
- * DO_30V_10V_2     PORT_E.0    -   AI_2 scale select: 0 = 0-10V, 1 = 0-30V
- * DO_POWER         PORT_E.2    -   keep-alive when KL15 is removed
- * CAN_WAKE         PORT_E.5    -   CAN transceiver WAKE
- *
- * PortF
- *
- * CAN_EN           PORT_F.0    -   CAN transceiver EN
- * CAN_STB_N        PORT_F.2    -   CAN transceiver STB
- * DO_30V_10V_1     PORT_F.5    -   AI_1 scale select: 0 = 0-10V, 1 = 0-30V
  *
  * Analog inputs    ADC chan    pin
  * ---------------------------------------------------------------------------
  *
- * AI_1             13          2
+ * AI_1             13          2   (shares pin with FREQ_1)
  * AI_2             6           8
  * AI_3             7           7
  * AI_CS_1          10          -   DO_HSD_1 current
@@ -135,13 +98,49 @@
  * AI_OP_3          8           10  DO_HSD_3 voltage
  * AI_OP_4          9           9   DO_HSD_4 voltage
  *
- * PWM outputs      timer channel   digital pin
+ * PWM outputs      timer1 channel  digital pin
  * ---------------------------------------------------------------------------
  *
  * PWM_IO1          2               DO_HSD_1
  * PWM_IO2          5               DO_HSD_2
  * PWM_IO3          3               DO_HSD_3
  * PWM_IO4          4               DO_HSD_4
+ *
+ * PortA
+ * -----
+ * DO_20MA_2        PORT_A.3    -   20mA current sink mode for AI_2
+ * DO_30V_10V_3     PORT_A.4    -   AI_3 scale select: 0 = 0-10V, 1 = 0-30V
+ * DO_HSD_SEN       PORT_A.5    -   internal current sense select (STAT_DIS?)
+ * AI_2             PORT_A.6    8   Analog input 2
+ * AI_3             PORT_A.7    7   Analog input 3
+ *
+ * PortB
+ * -----
+ * AI_1             PORT_B.5    2   Analog input 1
+ * AI_KL15          PORT_B.6    6   KL15
+ *
+ * PortD
+ * -----
+ * DO_20MA_1        PORT_D.0    -   20mA current sink mode for AI_1
+ * FREQ_IN          PORT_D.2    2   Frequency input (shares pin with AI_1)
+ * AI_3_PU          PORT_D.3    -   1k pullup on AI_3
+ * DO_HSD_1         PORT_D.4    12
+ * DO_HSD_3         PORT_D.5    10
+ * DO_HSD_4         PORT_D.6    9
+ * DO_HSD_2         PORT_D.7    11
+ *
+ * PortE
+ * -----
+ * DO_30V_10V_2     PORT_E.0    -   AI_2 scale select: 0 = 0-10V, 1 = 0-30V
+ * DO_POWER         PORT_E.2    -   keep-alive when KL15 is removed
+ * CAN_WAKE         PORT_E.5    -   CAN transceiver WAKE
+ *
+ * PortF
+ * -----
+ * CAN_EN           PORT_F.0    -   CAN transceiver EN
+ * CAN_STB_N        PORT_F.2    -   CAN transceiver STB
+ * DO_30V_10V_1     PORT_F.5    -   AI_1 scale select: 0 = 0-10V, 1 = 0-30V
+ *
  *
  * Notes:
  *  - For normal operation, set CAN_EN and CAN_STB_N high. See TJA1043
