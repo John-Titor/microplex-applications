@@ -5,7 +5,15 @@
 #ifndef _BOARD_H_
 #define _BOARD_H_
 
+#include <stdint.h>
+#include <stdio.h>
+#include <stdbool.h>
+
 #include "mc9s08dz60.h"
+
+// XXX the resulting code is easy to read, but it could be more compact;
+//     in the end we really just need 24 bytes of data copied to 24
+//     registers...
 
 //////////////////////////////////////////////////////////////////////
 // declare a digital input & helper functions
@@ -44,6 +52,15 @@ static const inline void init_ ## _name ()                      \
     _PT ## _port ## SE.Bits.PT ## _port ## SE ## _pin = _slow;  \
     _PT ## _port ## DS.Bits.PT ## _port ## DS ## _pin = _strong;\
 } struct hack
+
+//////////////////////////////////////////////////////////////////////
+// debug output via CAN
+//
+#if !defined(RELEASE) && defined(WITH_mscan)
+# define debug(fmt, args...)    printf(fmt "\n", ##args)
+#else
+# define debug(fmt, args...)    do { } while(0)
+#endif
 
 
 #ifdef BOARD_MICROPLEX_7X

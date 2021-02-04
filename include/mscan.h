@@ -85,6 +85,7 @@ extern void CAN_send_blocking(const CAN_message *msg);
 //
 // Debug messages are always ordered vs. other debug messages.
 extern void CAN_send_debug(const CAN_message *msg);
-extern void CAN_puts(const char *str);
 
+// Attempt to receive a CAN message
+//
 extern bool CAN_recv(CAN_message *msg);

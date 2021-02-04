@@ -14,7 +14,7 @@
 void default_handler() __interrupt(32)
 {
     // try to send a panic message
-    CAN_puts("!badirq");
+    puts("!badirq\n");
 
     // let the watchdog reset us
     for(;;);
@@ -30,14 +30,14 @@ dump_mem(uint16_t start, uint16_t end)
             sum += ptr[i];
         }
         sum = ~sum;
-        printf("S113%04X"
-               "%02X%02X%02X%02X%02X%02X%02X%02X"
-               "%02X%02X%02X%02X%02X%02X%02X%02X"
-               "%02X\n",
-               (unsigned)addr,
-               ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5], ptr[6], ptr[7],
-               ptr[8], ptr[9], ptr[10], ptr[11], ptr[12], ptr[13], ptr[14], ptr[15],
-               sum);
+        debug("S113%04X"
+              "%02X%02X%02X%02X%02X%02X%02X%02X"
+              "%02X%02X%02X%02X%02X%02X%02X%02X"
+              "%02X",
+              (unsigned)addr,
+              ptr[0], ptr[1], ptr[2], ptr[3], ptr[4], ptr[5], ptr[6], ptr[7],
+              ptr[8], ptr[9], ptr[10], ptr[11], ptr[12], ptr[13], ptr[14], ptr[15],
+              sum);
         __RESET_WATCHDOG();
         for (uint32_t x = 0; x < 20000; x++) {}
     }
