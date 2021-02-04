@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <adc.h>
 #include <board.h>
 #include <mscan.h>
 #include <timer.h>
@@ -91,15 +92,18 @@ dump_mem(uint16_t start, uint16_t end)
 }
 #endif
 
-volatile bool ticked;
+adc_channel_state_t adc_cfg = {
+    .channel = AI_OP_1,
+    .scale_factor = 1.1
+};
 
-void
-tick(void)
+static void
+sample_adc(void)
 {
-    ticked = true;
+    adc_update(&adc_cfg);
 }
-volatile timer_call_t tick_call = { .delay_ms = 1500, .period_ms = 3000, .callback = tick };
-//volatile timer_call tick_call = { .delay_ms = 15000, .period_ms = 0, .callback = tick };
+volatile timer_call_t adc_call = { .delay_ms = 100, .period_ms = 100, .callback = sample_adc };
+volatile timer_t adc_timer = { .delay_ms = 1000 };
 
 void
 main()
@@ -112,24 +116,34 @@ main()
     // start the timebase and timer callouts
     time_init();
 
+    // configure the ADC
+    adc_init();
+    adc_configure(&adc_cfg);
+
     // configure CAN
     CAN_init(CAN_BR_125, CAN_FM_NONE, NULL);
 
-    // Sign on; initial "X" gets eaten by the programmer
     debug("Multiplex 7X test firmware");
+
+    // Sign on; initial "X" gets eaten by the programmer
     __RESET_WATCHDOG();
 
     // turn on HSD_1
     set_DO_HSD_1(true);
 
+    // set AI_1 to 30V scale
+    set_DO_30V_10V_1(false);
+
     // set up timer callback
-    timer_call_register(&tick_call);
+    timer_call_register(&adc_call);
+    timer_register(&adc_timer);
 
     for (;;) {
         __RESET_WATCHDOG();
-        if (ticked) {
-            debug("tick %lu", time_us());
-            ticked = false;
+        if (timer_expired(adc_timer)) {
+            uint16_t val = adc_result(&adc_cfg);
+            debug("adc %u", val);
+            timer_reset(adc_timer, 1000);
         }
     }
 }
