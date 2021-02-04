@@ -35,10 +35,10 @@ _sdcc_external_startup()
     _MCGC1.Byte = 0xba;
 
     // wait for external oscillator init to complete
-    while (!(_MCGSC.Byte & (1<<1))) {
+    while (!(_MCGSC.Byte & (1 << 1))) {
     }
     // wait for IREFST to clear
-    while (_MCGSC.Byte & (1<<4)) {
+    while (_MCGSC.Byte & (1 << 4)) {
     }
     // wait for CLKST to match CLKS
     while ((_MCGSC.Byte & 0x0c) != 0x8) {
@@ -56,10 +56,10 @@ _sdcc_external_startup()
     _MCGC3.Byte = 0x45;
 
     // wait for PLLST / PLL to be selected
-    while (!(_MCGSC.Byte & (1<<5))) {
+    while (!(_MCGSC.Byte & (1 << 5))) {
     }
     // wait for LOCK / PLL locked
-    while (!(_MCGSC.Byte & (1<<6))) {
+    while (!(_MCGSC.Byte & (1 << 6))) {
     }
 
     // Switch to PLL clock

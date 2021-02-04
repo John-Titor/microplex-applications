@@ -9,8 +9,8 @@
 #include <mscan.h>
 #include <timer.h>
 
-// Handler for nonexistent vector 32 is patched in at 
-// fixup time as the default handler for vectors that 
+// Handler for nonexistent vector 32 is patched in at
+// fixup time as the default handler for vectors that
 // aren't assigned.
 void default_handler() __interrupt(32)
 {
@@ -18,7 +18,7 @@ void default_handler() __interrupt(32)
     puts("!badirq\n");
 
     // let the watchdog reset us
-    for(;;);
+    for (;;);
 }
 
 #if 0
@@ -26,11 +26,11 @@ void default_handler() __interrupt(32)
 // interrupt error debugging
 
 #define BADIRQ(_num)                        \
-void handler_ ## _num () __interrupt(_num)  \
-{                                           \
-    puts("irq " # _num);                    \
-    for(;;);                                \
-}
+    void handler_ ## _num () __interrupt(_num)  \
+    {                                           \
+        puts("irq " # _num);                    \
+        for(;;);                                \
+    }
 
 BADIRQ(VectorNumber_Vacmp2)
 BADIRQ(VectorNumber_Vacmp1)

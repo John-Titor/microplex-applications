@@ -6,17 +6,15 @@
 
 #include "mc9s08dz60.h"
 
-typedef struct _timer
-{
+typedef struct _timer {
     struct _timer   *_next;
     uint16_t        delay_ms;
 } timer_t;
 
-typedef struct _timer_call
-{
+typedef struct _timer_call {
     struct _timer_call *_next;
     uint16_t        delay_ms;
-    void            (*callback)();  // function to call
+    void (*callback)();             // function to call
     uint16_t        period_ms;      // tick interval between calls, 0 for one-shot
 } timer_call_t;
 

@@ -5,7 +5,7 @@
  *
  * FFCLK is 1MHz, so we run with a /1 prescaler to count microseconds.
  *
- * We maintain a 32-bit timebase which will wrap after ~71 minutes, 
+ * We maintain a 32-bit timebase which will wrap after ~71 minutes,
  * so code must be careful about absolute time values.
  */
 
@@ -26,7 +26,7 @@ time_init(void)
     TPM2SC = 0;
     TPM2SC_CLKSx = 2;   // select fixed clock
     TPM2SC_PS = 0;      // /1 prescaler
-    TPM2MOD = 0;        // clear modulus 
+    TPM2MOD = 0;        // clear modulus
     TPM2CNT = 0;        // clear counter
     TPM2SC_TOIE = 1;    // enable overflow interrupt
 
@@ -38,8 +38,7 @@ time_init(void)
 
 microseconds
 time_us(void)
-__critical
-{
+__critical {
     union {
         microseconds us;
         uint16_t    w[2];
@@ -51,25 +50,25 @@ __critical
 
     // if we have raced with overflow, increment the
     // high word and re-fetch the low word
-    if (TPM2SC & TPM2SC_TOF_MASK) {
+    if (TPM2SC & TPM2SC_TOF_MASK)
+    {
         tv.w[0]++;
         tv.w[1] = TPM2CNT;
     }
     return tv.us;
 }
 
-void 
+void
 Vtpm2ovf_handler(void)
 __interrupt(VectorNumber_Vtpm2ovf)
 {
     timer_high_word++;
-    TPM2SC_TOF = 0;   
+    TPM2SC_TOF = 0;
 }
 
 void
 timer_register(timer_t *timer)
-__critical
-{
+__critical {
     assert(timer != NULL);
 
     // singly-linked insertion at head
@@ -79,8 +78,7 @@ __critical
 
 void
 timer_call_register(timer_call_t *call)
-__critical
-{
+__critical {
     assert(call != NULL);
     assert(call->callback != NULL);
 

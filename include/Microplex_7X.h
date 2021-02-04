@@ -137,7 +137,7 @@
  *
  * PWM outputs      timer channel   digital pin
  * ---------------------------------------------------------------------------
- * 
+ *
  * PWM_IO1          2               DO_HSD_1
  * PWM_IO2          5               DO_HSD_2
  * PWM_IO3          3               DO_HSD_3
@@ -222,5 +222,5 @@ board_init()
     init_CAN_STB_N();
 
     // enable interrupts
-    __asm__ ("\tcli");
+    __asm__("\tcli");
 }

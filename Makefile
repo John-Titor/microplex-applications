@@ -84,7 +84,10 @@ format:
 FMT		+= --style=kr
 
 # Indent using 8-space tabs
-FMT		+= --indent=tab=8
+FMT		+= --indent=spaces=4
+
+# Don't make backups
+FMT		+= --suffix=none
 
 # Indent multiline preprocessor blocks
 FMT		+= --indent-preprocessor
@@ -120,4 +123,4 @@ FMT		+= --ignore-exclude-errors-x
 FMT		+= --exclude=obj
 
 # ignore various files we want to be able to diff with upstream providers
-#FMT		+= --exclude=printfl.c
+FMT		+= --exclude=mc9s08dz60.h

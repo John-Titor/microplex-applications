@@ -30,8 +30,8 @@ static bool _CAN_send(const CAN_message *msg,
 
 void
 CAN_init(CAN_bitrate bitrate,
-        CAN_filter_mode filter_mode,
-        const CAN_filters *filters)
+         CAN_filter_mode filter_mode,
+         const CAN_filters *filters)
 {
     assert(bitrate <= (sizeof(btr_table) / sizeof(btr_table[0])));
     assert(filter_mode <= CAN_FM_NONE);
@@ -41,7 +41,7 @@ CAN_init(CAN_bitrate bitrate,
     while (!(CANCTL1 & CANCTL1_INITAK_MASK)) {
     }
 
-    // enable MSCAN, select external clock 
+    // enable MSCAN, select external clock
     CANCTL1 = CANCTL1_CANE_MASK;
 
     // configure for selected bitrate
@@ -123,7 +123,7 @@ _CAN_send(const CAN_message *msg,
         if (wait_mode == WM_NONE) {
             return false;
         }
-    }        
+    }
 
     // select the buffer
     CANTBSEL = txe;
