@@ -14,11 +14,11 @@ typedef struct
 {
 	uint8_t		channel:5;
 	uint8_t		index:3;
-	float		scale_factor;
+	uint16_t	scale_factor;
 	uint16_t	samples[ADC_AVG_SAMPLES];
 } adc_channel_state_t;
 
-#define ADC_UNSCALED	HUGE_VALF
+#define ADC_UNSCALED	4096
 
 extern void		adc_init();
 extern void		adc_configure(adc_channel_state_t *state);

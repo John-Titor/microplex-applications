@@ -48,8 +48,6 @@ adc_update(adc_channel_state_t *state)
     state->samples[state->index++] = ADCR;
 }
 
-// 44us unscaled
-// 290us scaled
 uint16_t
 adc_result(adc_channel_state_t *state)
 {
@@ -61,9 +59,7 @@ adc_result(adc_channel_state_t *state)
         __critical v = state->samples[i];
         accum += v;
     }
-    if (state->scale_factor == ADC_UNSCALED) {
-        return accum >> 8;
-    } else {
-        return (uint16_t)(accum * state->scale_factor);
-    }
+    // fixed-point scaling means ~60us instead of ~300 using floats
+    uint32_t b = (uint32_t)accum * state->scale_factor;
+    return (uint16_t)(b >> 12);
 }

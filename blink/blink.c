@@ -94,7 +94,7 @@ dump_mem(uint16_t start, uint16_t end)
 
 adc_channel_state_t adc_cfg = {
     .channel = AI_OP_1,
-    .scale_factor = 1.1
+    .scale_factor = 4096
 };
 
 static void
@@ -141,8 +141,10 @@ main()
     for (;;) {
         __RESET_WATCHDOG();
         if (timer_expired(adc_timer)) {
+            microseconds before = time_us();
             uint16_t val = adc_result(&adc_cfg);
-            debug("adc %u", val);
+            microseconds after = time_us();
+            debug("adc %u %luus", val, after-before);
             timer_reset(adc_timer, 1000);
         }
     }

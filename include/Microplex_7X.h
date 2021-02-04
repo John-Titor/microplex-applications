@@ -195,7 +195,14 @@ _DO_PIN(CAN_STB_N,      F, 2, 1, _DO_SLOW, _DO_WEAK);
 // ADC scale factors
 //
 // Measurements in 10-bit mode. 
-// Scale factor = (full-scale value) / (1023 * 8)
+// 
+// Scaling is performed by taking the accumulated ADC counts
+// (sum of ADC_AVG_SAMPLES), multiplying by the scale factor
+// and then right-shifting by 12, i.e. the scale factor is a 
+// 4.12 fixed-point quantity.
+//
+// To calculate the scaling factor, take mV-per-count and
+// multiply by 512.
 //
 // AI_1/2/3:
 // --------
@@ -206,14 +213,14 @@ _DO_PIN(CAN_STB_N,      F, 2, 1, _DO_SLOW, _DO_WEAK);
 //
 // 30V: 4.3575  10V: 1.4801
 
-#define ADC_SCALE_FACTOR_30V    4.3575
-#define ADC_SCALE_FACTOR_10V    1.4801
+#define ADC_SCALE_FACTOR_30V    17849
+#define ADC_SCALE_FACTOR_10V    6062
 
 // AI_OP_1/2/3/4:
 // -------------
 // 8.73V, 271 counts -> 32.954V
 
-#define ADC_SCALE_FACTOR_DOV    4.0268
+#define ADC_SCALE_FACTOR_DOV    16494
 
 // AI_CS_1/2/3/4:
 // -------------
