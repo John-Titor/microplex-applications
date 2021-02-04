@@ -99,7 +99,7 @@ adc_channel_state_t adc_cfg = {
 
 static void
 sample_adc(void)
-{
+__reentrant {
     adc_update(&adc_cfg);
 }
 volatile timer_call_t adc_call = { .delay_ms = 100, .period_ms = 100, .callback = sample_adc };
@@ -144,7 +144,7 @@ main()
             microseconds before = time_us();
             uint16_t val = adc_result(&adc_cfg);
             microseconds after = time_us();
-            debug("adc %u %luus", val, after-before);
+            debug("adc %u %luus", val, after - before);
             timer_reset(adc_timer, 1000);
         }
     }

@@ -38,7 +38,8 @@ time_init(void)
 
 microseconds
 time_us(void)
-__critical {
+__critical
+__reentrant {
     union {
         microseconds us;
         uint16_t    w[2];
