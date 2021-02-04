@@ -11,8 +11,6 @@
  */
 
 #include <mc9s08dz60.h>
-#include <stdint.h>
-#include <stdbool.h>
 
 /*
  * Memory Map:
@@ -222,4 +220,7 @@ board_init()
     init_DO_30V_10V_2();
     init_DO_30V_10V_3();
     init_CAN_STB_N();
+
+    // enable interrupts
+    __asm__ ("\tcli");
 }

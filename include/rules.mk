@@ -41,7 +41,8 @@ endif
 CFLAGS		+=	-DBOARD_$(BOARD) \
 			--stack-loc 0x107f \
 			--std-sdcc11 \
-			$(addprefix -D,$(DEFINES))
+			$(addprefix -D,$(DEFINES)) \
+			$(if $(RELEASE),-DNDEBUG -DRELEASE,)
 
 LDFLAGS		 =	--code-loc 0x2200 \
 			--code-size 0x8d80 \
@@ -80,7 +81,7 @@ SREC_FIXUP	 =	$(SRCROOT)/tools/fix_srecords.py
 #
 # Non-optional library modules
 #
-LIB_MODULES	+=	_sdcc_external_startup
+LIB_MODULES	+=	_sdcc_external_startup timer
 DEFINES		+=	$(addprefix WITH_,$(LIB_MODULES))
 
 #
@@ -115,9 +116,8 @@ $(PRODUCT_SREC):	$(OBJS)
 
 $(OBJROOT)/%.rel: $(PRODUCT_DIR)/%.c
 	@mkdir -p $(@D)
-	@echo DEP $<
-	$(v)(/bin/echo -n $(@D)/ && $(CC) $(DEPFLAGS) $<) > $@.dep
 	@echo CC $<
+	$(v)(/bin/echo -n $(@D)/ && $(CC) $(DEPFLAGS) $<) > $@.dep
 	$(v)$(CC) -c -o $@ $(CFLAGS) $<
 
 $(OBJROOT)/%.rel: $(PRODUCT_DIR)/%.asm
@@ -128,9 +128,8 @@ $(OBJROOT)/%.rel: $(PRODUCT_DIR)/%.asm
 
 $(OBJROOT)/%.rel: $(LIB_DIR)/%.c
 	@mkdir -p $(@D)
-	@echo DEP $<
-	$(v)(/bin/echo -n $(@D)/ && $(CC) $(DEPFLAGS) $<) > $@.dep
 	@echo CC $<
+	$(v)(/bin/echo -n $(@D)/ && $(CC) $(DEPFLAGS) $<) > $@.dep
 	$(v)$(CC) -c -o $@ $(CFLAGS) $<
 
 clean:
