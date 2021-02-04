@@ -21,11 +21,11 @@ typedef struct _timer_call {
 typedef uint32_t microseconds;
 
 extern void         time_init(void);
-extern microseconds time_us(void);
+extern microseconds time_us(void);  // costs ~6us
 extern void         timer_register(timer_t *timer);
 extern void         timer_call_register(timer_call_t *call);
 
-#define timer_reset(_timer, _delay) __critical do { (_timer).delay_ms = delay; } while(0)
+#define timer_reset(_timer, _delay) __critical do { (_timer).delay_ms = _delay; } while(0)
 #define timer_expired(_timer)       ((_timer).delay_ms == 0)
 
 extern void Vtpm2ovf_handler(void) __interrupt(VectorNumber_Vtpm2ovf);

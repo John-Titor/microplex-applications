@@ -171,6 +171,13 @@ _DO_PIN(DO_30V_10V_2,   E, 0, 0, _DO_SLOW, _DO_WEAK);
 _DO_PIN(DO_30V_10V_3,   A, 4, 0, _DO_SLOW, _DO_WEAK);
 _DO_PIN(CAN_STB_N,      F, 2, 1, _DO_SLOW, _DO_WEAK);
 
+
+// TPM1 channels corresponding to the HSD outputs
+#define PWM_HSD_1           2
+#define PWM_HSD_2           5
+#define PWM_HSD_3           3
+#define PWM_HSD_4           4
+
 // ADC channel assignments
 #define AI_1                13
 #define AI_2                6
@@ -185,16 +192,42 @@ _DO_PIN(CAN_STB_N,      F, 2, 1, _DO_SLOW, _DO_WEAK);
 #define AI_OP_3             8
 #define AI_OP_4             9
 
-// TPM1 channels corresponding to the HSD outputs
-#define PWM_HSD_1           2
-#define PWM_HSD_2           5
-#define PWM_HSD_3           3
-#define PWM_HSD_4           4
+// ADC scale factors
+//
+// Measurements in 10-bit mode. 
+// Scale factor = (full-scale value) / (1023 * 8)
+//
+// AI_1/2/3:
+// --------
+// 8.75V, 30V scale, 251 counts -> 35.662V (claimed 32V)
+// 8.75V, 10V scale, 739 counts -> 12.113V (claimed 11.4V)
+// 1K pullup mode: TBD
+// 20mA mode: TBD (claimed 25mA)
+//
+// 30V: 4.3575  10V: 1.4801
+
+#define ADC_SCALE_FACTOR_30V    4.3575
+#define ADC_SCALE_FACTOR_10V    1.4801
+
+// AI_OP_1/2/3/4:
+// -------------
+// 8.73V, 271 counts -> 32.954V
+
+#define ADC_SCALE_FACTOR_DOV    4.0268
+
+// AI_CS_1/2/3/4:
+// -------------
+// TBD
+
+// AI_KL15:
+// -------
+// TBD; may be clamped. Probably best treated as a
+// digital input.
 
 // Initialize pins to suit the module.
 //
 // Note: analog inputs are configured as digital inputs
-//       by default.
+//       by default; adc_configure will claim them later.
 //
 static inline void
 board_init()
