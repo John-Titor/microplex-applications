@@ -41,7 +41,7 @@ $(TARGETS):	action  = $(word 1, $(config))
 $(TARGETS):	app	= $(word 2, $(config))
 $(TARGETS):
 	@echo % $(action) $(app)
-	@make -f $(app)/app.mk $(action) \
+	@$(MAKE) -f $(app)/app.mk $(action) \
 		APP=$(APP)
 
 .PHONY:	$(ACTIONS) $(TARGETS)
@@ -54,6 +54,11 @@ help:
 	@echo ""
 	@echo "    all         - Builds everything, this is the default target."
 	@echo "    clean       - Cleans all build products"
+	@echo ""
+	@echo "Common options:"
+	@echo ""
+	@echo "    RELEASE=1   - Build the release (no assertions, no debug logging)"
+	@echo "                  configuration."
 	@echo ""
 	@echo "A specific app may be built by selecting one or more of the following targets:"
 	@echo ""
@@ -115,10 +120,4 @@ FMT		+= --ignore-exclude-errors-x
 FMT		+= --exclude=obj
 
 # ignore various files we want to be able to diff with upstream providers
-FMT		+= --exclude=Si1000_defs.h
-FMT		+= --exclude=Si1020_defs.h
-FMT		+= --exclude=compiler_defs.h
-FMT		+= --exclude=rtPhy.c
-FMT		+= --exclude=rtPhy.h
-FMT		+= --exclude=rtPhy_defs.h
-FMT		+= --exclude=printfl.c
+#FMT		+= --exclude=printfl.c
