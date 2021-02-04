@@ -10,12 +10,11 @@
 // initialize the scale_factor channel state element
 //#define ADC_SCALE_FACTOR(_fulL_scale_value)	((float)(_full_scale_value) / (1023 * 8))
 
-typedef struct
-{
-	uint8_t		channel:5;
-	uint8_t		index:3;
-	uint16_t	scale_factor;
-	uint16_t	samples[ADC_AVG_SAMPLES];
+typedef struct {
+    uint8_t		channel: 5;
+    uint8_t		index: 3;
+    uint16_t	scale_factor;
+    uint16_t	samples[ADC_AVG_SAMPLES];
 } adc_channel_state_t;
 
 #define ADC_UNSCALED	4096

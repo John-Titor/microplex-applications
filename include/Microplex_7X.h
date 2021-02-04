@@ -194,11 +194,11 @@ _DO_PIN(CAN_STB_N,      F, 2, 1, _DO_SLOW, _DO_WEAK);
 
 // ADC scale factors
 //
-// Measurements in 10-bit mode. 
-// 
+// Measurements in 10-bit mode.
+//
 // Scaling is performed by taking the accumulated ADC counts
 // (sum of ADC_AVG_SAMPLES), multiplying by the scale factor
-// and then right-shifting by 12, i.e. the scale factor is a 
+// and then right-shifting by 12, i.e. the scale factor is a
 // 4.12 fixed-point quantity.
 //
 // To calculate the scaling factor, take mV-per-count and
