@@ -10,7 +10,7 @@
 #include <stdint.h>
 #include <mc9s08dz60.h>
 
-void
+char
 _sdcc_external_startup()
 {
     __RESET_WATCHDOG();
@@ -70,4 +70,12 @@ _sdcc_external_startup()
     // wait for CLKST to match CLKS - PLL selected
     while ((_MCGSC.Byte & 0x0c) != 0x0c) {
     }
+
+    // clear RAM / BSS, since the SDCC startup code doesn't; don't
+    // clear the last 0x80 bytes since the stack is there...
+    for (uint8_t *p = (uint8_t *)0x80; p < (uint8_t *)0x1000; p++) {
+        *p = 0;
+    }
+
+    return 0;
 }
