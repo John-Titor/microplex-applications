@@ -1,7 +1,8 @@
 /*
- * Timers and timebase
+ * Timers and timebase.
  */
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "mc9s08dz60.h"
@@ -28,6 +29,12 @@ extern void         time_init(void);
 
 // get the current time
 extern microseconds time_us(void);  // costs ~6us
+
+// check whether some time has elapsed
+extern bool 		time_elapsed_us(microseconds since_us, uint16_t interval_us);
+
+// wait for a period
+extern void 		time_wait_us(uint16_t delay_us);
 
 // register a one-shot timer
 extern void         timer_register(timer_t *timer);

@@ -57,6 +57,21 @@ __reentrant {
     return tv.us;
 }
 
+bool
+time_elapsed_us(microseconds since_us, uint16_t interval_us)
+{
+    return (time_us() - since_us) >= interval_us;
+}
+
+void
+time_wait_us(uint16_t delay_us)
+{
+    microseconds then = time_us();
+
+    while (!time_elapsed_us(then, delay_us)) {
+    }
+}
+
 void
 Vtpm2ovf_handler(void)
 __interrupt(VectorNumber_Vtpm2ovf)
