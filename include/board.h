@@ -21,12 +21,12 @@
 #define _DI_PULL_UP     1
 #define _DI_NO_PULL     0
 
-#define _DI_PIN(_name, _port, _pin, _pull)                      \
-    static const inline bool test_ ## _name ()                      \
+#define _DI_PIN(_name, _port, _pin, _pull)                          \
+    static inline bool test_ ## _name ()                            \
     {                                                               \
         return _PT ## _port ## D.Bits.PT ## _port ## D ## _pin;     \
     }                                                               \
-    static const inline void init_ ## _name ()                      \
+    static inline void init_ ## _name ()                            \
     {                                                               \
         _PT ## _port ## DD.Bits.PT ## _port ## DD ## _pin = 0;      \
         _PT ## _port ## PE.Bits.PT ## _port ## PE ## _pin = _pull;  \
@@ -40,12 +40,12 @@
 #define _DO_WEAK        0
 #define _DO_STRONG      1
 
-#define _DO_PIN(_name, _port, _pin, _default, _slow, _strong)   \
-    static const inline void set_ ## _name (bool _v)                \
+#define _DO_PIN(_name, _port, _pin, _default, _slow, _strong)       \
+    static inline void set_ ## _name (bool _v)                      \
     {                                                               \
         _PT ## _port ## D.Bits.PT ## _port ## D ## _pin = _v;       \
     }                                                               \
-    static const inline void init_ ## _name ()                      \
+    static inline void init_ ## _name ()                            \
     {                                                               \
         _PT ## _port ## D.Bits.PT ## _port ## D ## _pin = _default; \
         _PT ## _port ## DD.Bits.PT ## _port ## DD ## _pin = 1;      \
