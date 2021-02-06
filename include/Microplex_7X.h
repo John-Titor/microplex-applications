@@ -47,7 +47,7 @@
  * 3                +12V
  * 4                CAN_L
  * 5                CAN_H
- * 6                AI_KL15
+ * 6                DI_KL15
  * 7                AI_3
  * 8                AI_2
  * 9                DO_HSD_4, PWM_IO4, AI_OP_4
@@ -61,6 +61,11 @@
  * DI_CAN_ERR       PORT_F.3    -   CAN transceiver error signal
  * FREQ_1           PORT_D.2    2   Frequency input (shares pin with AI_1)
  *                                  also on TPM1C0
+ * DI_KL15          PORT_B.6    6   KL15 input signal
+ * DI_CS_1          PORT_B.2    -   DO_HSD_1 status signal
+ * DI_CS_2          PORT_A.2    -   DO_HSD_2 status signal
+ * DI_CS_3          PORT_B.3    -   DO_HSD_3 status signal
+ * DI_CS_4          PORT_B.4    -   DO_HSD_4 status signal
  *
  * Digital outputs  port        pin
  * ---------------------------------------------------------------------------
@@ -88,10 +93,10 @@
  * AI_1             13          2   (shares pin with FREQ_1)
  * AI_2             6           8
  * AI_3             7           7
- * AI_CS_1          10          -   DO_HSD_1 current
- * AI_CS_2          2           -   DO_HSD_2 current
- * AI_CS_3          11          -   DO_HSD_3 current
- * AI_CS_4          12          -   DO_HSD_4 current
+ * AI_CS_1          10          -   DO_HSD_1 sense pin
+ * AI_CS_2          2           -   DO_HSD_2 sense pin
+ * AI_CS_3          11          -   DO_HSD_3 sense pin
+ * AI_CS_4          12          -   DO_HSD_4 sense pin
  * AI_KL15          14          6   KL15 voltage
  * AI_OP_1          0           12  DO_HSD_1 voltage
  * AI_OP_2          1           11  DO_HSD_2 voltage
@@ -101,13 +106,14 @@
  * PWM outputs      timer1 channel  digital pin
  * ---------------------------------------------------------------------------
  *
- * PWM_IO1          2               DO_HSD_1
- * PWM_IO2          5               DO_HSD_2
- * PWM_IO3          3               DO_HSD_3
- * PWM_IO4          4               DO_HSD_4
+ * PWM_IO1          2           -   DO_HSD_1
+ * PWM_IO2          5           -   DO_HSD_2
+ * PWM_IO3          3           -   DO_HSD_3
+ * PWM_IO4          4           -   DO_HSD_4
  *
  * PortA
  * -----
+ * DI_CS_2          PORT_A.2    -   DO_HSD_2 status signal
  * DO_20MA_2        PORT_A.3    -   20mA current sink mode for AI_2
  * DO_30V_10V_3     PORT_A.4    -   AI_3 scale select: 0 = 0-10V, 1 = 0-30V
  * DO_HSD_SEN       PORT_A.5    -   internal current sense select (STAT_DIS?)
@@ -116,8 +122,11 @@
  *
  * PortB
  * -----
+ * DI_CS_1          PORT_B.2    -   DO_HSD_1 status signal
+ * DI_CS_3          PORT_B.3    -   DO_HSD_3 status signal
+ * DI_CS_4          PORT_B.4    -   DO_HSD_4 status signal
  * AI_1             PORT_B.5    2   Analog input 1
- * AI_KL15          PORT_B.6    6   KL15
+ * DI_KL15          PORT_B.6    6   KL15
  *
  * PortD
  * -----
@@ -152,7 +161,11 @@ _DI_PIN(FREQ_1,         D, 2, _DI_NO_PULL);
 _DI_PIN(AI_1,           B, 5, _DI_NO_PULL);
 _DI_PIN(AI_2,           A, 6, _DI_NO_PULL);
 _DI_PIN(AI_3,           A, 7, _DI_NO_PULL);
-_DI_PIN(AI_KL15,        B, 6, _DI_NO_PULL);
+_DI_PIN(DI_KL15,        B, 6, _DI_NO_PULL);
+_DI_PIN(DI_CS_1,        B, 2, _DI_PULL_UP);
+_DI_PIN(DI_CS_2,        A, 2, _DI_PULL_UP);
+_DI_PIN(DI_CS_3,        B, 3, _DI_PULL_UP);
+_DI_PIN(DI_CS_4,        B, 4, _DI_PULL_UP);
 
 _DO_PIN(CAN_EN,         F, 0, 1, _DO_SLOW, _DO_WEAK);
 _DO_PIN(CAN_WAKE,       E, 5, 0, _DO_SLOW, _DO_WEAK);
@@ -191,6 +204,10 @@ _DO_PIN(CAN_STB_N,      F, 2, 1, _DO_SLOW, _DO_WEAK);
 #define AI_OP_3             8
 #define AI_OP_4             9
 
+#define AI_MODE_10V         false
+#define AI_MODE_30V         true
+
+
 // ADC scale factors
 //
 // Measurements in 10-bit mode.
@@ -223,12 +240,13 @@ _DO_PIN(CAN_STB_N,      F, 2, 1, _DO_SLOW, _DO_WEAK);
 
 // AI_CS_1/2/3/4:
 // -------------
-// TBD
+// Not worth ADC, as these are logic signals. Use DI_CS_1/2/3/4
+// instead.
 
 // AI_KL15:
 // -------
-// TBD; may be clamped. Probably best treated as a
-// digital input.
+// Not worth ADC, clamped rather than scaled, cannot read 12V.
+// Use DI_KL15 instead.
 
 // Initialize pins to suit the module.
 //
@@ -239,10 +257,16 @@ static inline void
 board_init()
 {
     init_DI_CAN_ERR();
+    init_DI_KL15();
+    init_DI_CS_1();
+    init_DI_CS_2();
+    init_DI_CS_3();
+    init_DI_CS_4();
+
     init_AI_1();
     init_AI_2();
     init_AI_3();
-    init_AI_KL15();
+
     init_FREQ_1();
     init_CAN_EN();
     init_CAN_WAKE();
