@@ -34,10 +34,11 @@ time_init(void)
     TPM2C1SC_CH1IE = 1; // enable interrupt
 }
 
+#pragma save
+#pragma nooverlay
 microseconds
 time_us(void)
-__critical
-__reentrant {
+__critical {
     union {
         microseconds us;
         uint16_t    w[2];
@@ -56,6 +57,7 @@ __reentrant {
     }
     return tv.us;
 }
+#pragma restore
 
 bool
 time_elapsed_us(microseconds since_us, uint16_t interval_us)

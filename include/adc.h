@@ -21,9 +21,10 @@ typedef struct {
 
 extern void		adc_init();
 extern void		adc_configure(adc_channel_state_t *state);
-extern void 	adc_update(adc_channel_state_t *state);
 extern uint16_t adc_result(adc_channel_state_t *state);
 extern uint16_t adc_result_unscaled(adc_channel_state_t *state);
-
 extern void		adc_configure_direct(uint8_t channel);
+
+// these functions can be safely called from interrupt context
+extern void 	adc_update(adc_channel_state_t *state);
 extern uint16_t	adc_sample_direct(uint8_t channel);

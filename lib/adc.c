@@ -44,12 +44,6 @@ adc_configure(adc_channel_state_t *state)
     }
 }
 
-void
-adc_update(adc_channel_state_t *state)
-__reentrant {
-    state->samples[state->index++] = adc_sample_direct(state->channel);
-}
-
 uint16_t
 adc_result(adc_channel_state_t *state)
 {
@@ -66,6 +60,19 @@ adc_result(adc_channel_state_t *state)
     return (uint16_t)(b >> 12);
 }
 
+#pragma save
+#pragma nooverlay
+void
+adc_update(adc_channel_state_t *state)
+{
+    ADCSC1_ADCH = channel;
+    // wait for completion
+    while (!ADCSC1_COCO)
+    {
+    }
+    state->samples[state->index++] = ADCR;
+}
+
 uint16_t
 adc_sample_direct(uint8_t channel)
 __critical {
@@ -76,3 +83,4 @@ __critical {
     }
     return ADCR;
 }
+#pragma restore
