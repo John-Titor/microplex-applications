@@ -7,6 +7,13 @@
  *
  * We maintain a 32-bit timebase which will wrap after ~71 minutes,
  * so code must be careful about absolute time values.
+ *
+ * A note on time_wait_us: the maximum delay is limited to u_int16 both
+ * for efficiency (waiting longer than 64ms is not friendly to other parts
+ * of the system) and also to make it safe to use in a __critical region;
+ * time_us can only handle one wrap before it needs the overflow handler to
+ * run and adjust the timebase high word.
+ * 
  */
 
 #include <assert.h>
@@ -16,7 +23,7 @@
 
 static timer_t      *timer_list;
 static timer_call_t *timer_call_list;
-static volatile __data uint16_t timer_high_word;
+static volatile __data uint16_t timebase_high_word;
 
 void
 time_init(void)
@@ -45,7 +52,7 @@ __critical {
     } tv;
 
     // get the "current" time value
-    tv.w[0] = timer_high_word;
+    tv.w[0] = timebase_high_word;
     tv.w[1] = TPM2CNT;
 
     // if we have raced with overflow, increment the
@@ -78,7 +85,7 @@ void
 Vtpm2ovf_handler(void)
 __interrupt(VectorNumber_Vtpm2ovf)
 {
-    timer_high_word++;
+    timebase_high_word++;
     TPM2SC_TOF = 0;
 }
 

@@ -131,7 +131,7 @@ _CAN_send(const CAN_message *msg,
     // read back to work out which one we actually selected
     txe = CANTBSEL;
 
-    // copy message to buffer
+    // copy message to registers
     CANTIDR0 = msg->id.regs[0];
     CANTIDR1 = msg->id.regs[1];
     CANTIDR2 = msg->id.regs[2];
@@ -161,8 +161,29 @@ CAN_recv(CAN_message *msg)
 {
     assert(msg != NULL);
 
-    (void)msg;
-    return false;
+    // check for message in FIFO
+    if (!CANRFLG_RXF) {
+        return false;
+    }
+
+    // copy message from registers
+    msg->id.regs[0] = CANRIDR0;
+    msg->id.regs[1] = CANRIDR1;
+    msg->id.regs[2] = CANRIDR2;
+    msg->id.regs[3] = CANRIDR3;
+    msg->data[0] = CANRDSR0;
+    msg->data[1] = CANRDSR1;
+    msg->data[2] = CANRDSR2;
+    msg->data[3] = CANRDSR3;
+    msg->data[4] = CANRDSR4;
+    msg->data[5] = CANRDSR5;
+    msg->data[6] = CANRDSR6;
+    msg->data[7] = CANRDSR7;
+    msg->dlc = CANRDLR;
+
+    // mark message as consumed
+    CANRFLG_RXF = 1;
+    return true;
 }
 
 int

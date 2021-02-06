@@ -65,7 +65,7 @@ adc_result(adc_channel_state_t *state)
 void
 adc_update(adc_channel_state_t *state)
 {
-    ADCSC1_ADCH = channel;
+    ADCSC1_ADCH = state->channel;
     // wait for completion
     while (!ADCSC1_COCO)
     {
