@@ -38,9 +38,9 @@ typedef union {
 // Generate MSCAN ID register values at compile time.
 //
 // extended ID, no RTR
-#define MSCAN_ID_EXT(_id)	(((((uint32_t)(_id)) << 3) & (uint32_t)0xffe00000)	\
-                             | ((uint32_t)3 << 19)								\
-                             | (((uint32_t)(_id) << 1) & (uint32_t)0x0007fffe))
+#define MSCAN_ID_EXTENDED(_id)	(((((uint32_t)(_id)) << 3) & (uint32_t)0xffe00000)	\
+                                 | ((uint32_t)3 << 19)								\
+                                 | (((uint32_t)(_id) << 1) & (uint32_t)0x0007fffe))
 
 // extended ID, RTR
 #define MSCAN_ID_EXT_RTR(_id)	(MSCAN_ID_EXT(_id) | 1)
