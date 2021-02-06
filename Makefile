@@ -15,7 +15,7 @@ export SRCROOT	:= $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 #
 # Things we will try to build
 #
-APPS	 	 ?= blink
+APPS	 	 ?= e36-tail-module
 
 #
 # Build a full list of targets.
