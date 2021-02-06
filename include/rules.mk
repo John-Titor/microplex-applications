@@ -108,27 +108,27 @@ endif
 build:	$(PRODUCT_SREC)
 
 $(PRODUCT_SREC):	$(OBJS)
-	@echo LD $@
 	@mkdir -p $(@D)
+	@echo LD $(notdir $@)
 	$(v)$(LD) $(LDFLAGS) -o $@ $(OBJS)
-	@echo `grep '^CSEG' obj/MICROPLEX_7X/blink/blink.map | cut -c 66-70`/36219 bytes used
+	@echo `grep '^CSEG' $(@:.s19=.map) | cut -c 66-70`/36219 bytes used
 	$(v)$(SREC_FIXUP) $@ || rm -f $@
 
 $(OBJROOT)/%.rel: $(PRODUCT_DIR)/%.c
 	@mkdir -p $(@D)
-	@echo CC $<
+	@echo CC $(notdir $<)
 	$(v)(/bin/echo -n $(@D)/ && $(CC) $(DEPFLAGS) $<) > $@.dep
 	$(v)$(CC) -c -o $@ $(CFLAGS) $<
 
 $(OBJROOT)/%.rel: $(PRODUCT_DIR)/%.asm
-	@echo AS $<
 	@mkdir -p $(@D)
+	@echo AS $(notdir $<)
 	$(v)cp $< $(subst $(PRODUCT_DIR),$(OBJROOT),$<)
 	$(v)$(AS) $(ASFLAGS) $(subst $(PRODUCT_DIR),$(OBJROOT),$<)
 
 $(OBJROOT)/%.rel: $(LIB_DIR)/%.c
 	@mkdir -p $(@D)
-	@echo CC $<
+	@echo CC $(notdir $<)
 	$(v)(/bin/echo -n $(@D)/ && $(CC) $(DEPFLAGS) $<) > $@.dep
 	$(v)$(CC) -c -o $@ $(CFLAGS) $<
 
