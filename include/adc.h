@@ -5,10 +5,10 @@
 #include <math.h>
 #include <stdint.h>
 
+// a simple moving-average filter is used, results are
+// averaged over the last ADC_AVG_SAMPLES
+//
 #define ADC_AVG_SAMPLES			8
-
-// initialize the scale_factor channel state element
-//#define ADC_SCALE_FACTOR(_fulL_scale_value)	((float)(_full_scale_value) / (1023 * 8))
 
 typedef struct {
     uint8_t		channel: 5;
@@ -24,3 +24,6 @@ extern void		adc_configure(adc_channel_state_t *state);
 extern void 	adc_update(adc_channel_state_t *state);
 extern uint16_t adc_result(adc_channel_state_t *state);
 extern uint16_t adc_result_unscaled(adc_channel_state_t *state);
+
+extern void		adc_configure_direct(uint8_t channel);
+extern uint16_t	adc_sample_direct(uint8_t channel);

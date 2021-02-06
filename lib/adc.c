@@ -20,17 +20,23 @@ adc_init()
 }
 
 void
-adc_configure(adc_channel_state_t *state)
+adc_configure_direct(uint8_t channel)
 {
-    if (state->channel < 8) {
-        APCTL1 |= (1 << state->channel);
-    } else if (state->channel < 16) {
-        APCTL2 |= (1 << (state->channel - 8));
-    } else if (state->channel < 24) {
-        APCTL3 |= (1 << (state->channel - 16));
+    if (channel < 8) {
+        APCTL1 |= (1 << channel);
+    } else if (channel < 16) {
+        APCTL2 |= (1 << (channel - 8));
+    } else if (channel < 24) {
+        APCTL3 |= (1 << (channel - 16));
     } else {
         // channels above 24 are not assigned to pins
     }
+}
+
+void
+adc_configure(adc_channel_state_t *state)
+{
+    adc_configure_direct(state->channel);
 
     // prime the channel with samples
     for (uint8_t i = 0; i < ADC_AVG_SAMPLES; i++) {
@@ -41,12 +47,7 @@ adc_configure(adc_channel_state_t *state)
 void
 adc_update(adc_channel_state_t *state)
 __reentrant {
-    ADCSC1_ADCH = state->channel;
-    // wait for completion
-    while (!ADCSC1_COCO)
-    {
-    }
-    state->samples[state->index++] = ADCR;
+    state->samples[state->index++] = adc_sample_direct(state->channel);
 }
 
 uint16_t
@@ -63,4 +64,15 @@ adc_result(adc_channel_state_t *state)
     // fixed-point scaling means ~60us instead of ~300 using floats
     uint32_t b = (uint32_t)accum * state->scale_factor;
     return (uint16_t)(b >> 12);
+}
+
+uint16_t
+adc_sample_direct(uint8_t channel)
+__critical {
+    ADCSC1_ADCH = channel;
+    // wait for completion
+    while (!ADCSC1_COCO)
+    {
+    }
+    return ADCR;
 }
