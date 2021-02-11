@@ -11,6 +11,10 @@
 static
 adc_channel_state_t adc_cfg[] = {
     // fast-polled channels
+    {
+        .channel = AI_KL15,
+        .scale_factor = 4096        // XXX TBD
+    },
 
     // slow-polled channels
     {
@@ -18,9 +22,8 @@ adc_channel_state_t adc_cfg[] = {
         .scale_factor = 4096        // XXX TBD
     },
 };
-static const uint8_t num_adc_fast_cfg = 0;
-static const uint8_t num_adc_slow_cfg = 1;
-static const uint8_t num_adc_cfg = 1;
+static const uint8_t num_adc_fast_cfg = 1;
+static const uint8_t num_adc_cfg = sizeof(adc_cfg) / sizeof(adc_cfg[0]);
 
 #pragma save
 #pragma nooverlay

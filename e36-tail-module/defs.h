@@ -8,18 +8,22 @@
 #include <board.h>
 #include <pt.h>
 
+/*
+ * CAN threads.
+ */
+
 extern void can_listen(struct pt *pt);
 extern void can_report(struct pt *pt);
-extern void output_thread(struct pt *pt);
+
+/*
+ * Analog monitors.
+ */
 
 typedef enum {
-    // fast-sampled channels
-    MON_DO_CURRENT_1,
-    MON_DO_CURRENT_2,
-    MON_DO_CURRENT_3,
-    MON_DO_CURRENT_4,
+    // Fast-sampled channels.
+    MON_KL15,
 
-    // slow-sampled channels
+    // Slow-sampled channels.
     MON_FUEL_LEVEL,
 } monitor_channel_t;
 
@@ -30,32 +34,51 @@ extern uint16_t monitor_get(monitor_channel_t channel);
  * High-side driver outputs.
  */
 
+#define NUM_OUTPUTS 4
+
 typedef enum {
     OUTPUT_BRAKE_L,
     OUTPUT_BRAKE_R,
     OUTPUT_TAIL,
     OUTPUT_RAIN
-};
+} output_id_t;
 
-typedef enum {
-    OUT_STATE_OFF,
-    OUT_STATE_ON,
-    OUT_STATE_OPEN_CIRCUIT,
-    _OUT_STATE_PERMANENT_FAULT_STATES,
-    OUT_STATE_OVERTEMP,
-    OUT_STATE_OVERLOAD,
-    OUT_STATE_STUCK
-} output_status_t;
-
-extern void output_init(void);
-extern void do_output_check(void);
+extern void output_thread(struct pt *pt);
 extern void output_request(uint8_t channel, bool on);
-extern uint8_t output_status(uint8_t channel);
+extern void do_output_check(void);
 
 /*
- * CAN
+ * Faults
  */
 
-extern void do_can_listen(void);
-extern void do_can_report(void);
+typedef enum {
+    OUT_FAULT_OPEN,
+    OUT_FAULT_STUCK,
+    OUT_FAULT_OVERLOAD,
+    _OUT_FAULT_MAX,
+} output_fault_t;
+
+typedef enum
+{
+    SYS_FAULT_CAN_TIMEOUT,
+    SYS_FAULT_OVERTEMP,
+    SYS_FAULT_MAX,
+} system_fault_t;
+
+typedef union
+{
+    struct {
+        uint8_t     current:4;
+        uint8_t     latched:4;
+    } fields;
+    uint8_t     raw;
+} fault_status_t;
+
+extern fault_status_t   fault_output[NUM_OUTPUTS];
+extern fault_status_t   fault_system;
+
+extern void fault_set_output(output_id_t id, output_fault_t fault);
+extern void fault_clear_output(output_id_t id, output_fault_t fault);
+extern void fault_set_system(system_fault_t fault);
+extern void fault_clear_system(system_fault_t fault);
 
