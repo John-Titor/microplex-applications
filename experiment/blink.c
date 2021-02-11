@@ -95,7 +95,7 @@ dump_mem(uint16_t start, uint16_t end)
 
 adc_channel_state_t adc_cfg = {
     .channel = AI_OP_1,
-    .scale_factor = 4096
+    .scale_factor = ADC_SCALE_FACTOR_DO
 };
 
 static void
@@ -134,9 +134,7 @@ main()
 
     // turn on HSD_1
     set_DO_HSD_1(true);
-
-    // set AI_1 to 30V scale
-    set_DO_30V_10V_1(false);
+//    set_DO_30V_10V_1(AI_MODE_30V);
 
     // set up timer callback
     timer_call_register(&adc_call);

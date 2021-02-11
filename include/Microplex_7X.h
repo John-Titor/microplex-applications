@@ -222,21 +222,16 @@ _DO_PIN(CAN_STB_N,      F, 2, 1, _DO_SLOW, _DO_WEAK);
 //
 // AI_1/2/3:
 // --------
-// 8.75V, 30V scale, 251 counts -> 35.662V (claimed 32V)
-// 8.75V, 10V scale, 739 counts -> 12.113V (claimed 11.4V)
 // 1K pullup mode: TBD
 // 20mA mode: TBD (claimed 25mA)
-//
-// 30V: 4.3575  10V: 1.4801
 
-#define ADC_SCALE_FACTOR_30V    17849
-#define ADC_SCALE_FACTOR_10V    6062
+#define ADC_SCALE_FACTOR_30V    17900   // VALIDATED @ 4.860V
+#define ADC_SCALE_FACTOR_10V    6065    // VALIDATED @ 4.860V
 
 // AI_OP_1/2/3/4:
 // -------------
-// 8.73V, 271 counts -> 32.954V
 
-#define ADC_SCALE_FACTOR_DOV    16494
+#define ADC_SCALE_FACTOR_DO     16494   // VALIDATED @ 11.46V
 
 // AI_CS_1/2/3/4:
 // -------------
@@ -245,8 +240,11 @@ _DO_PIN(CAN_STB_N,      F, 2, 1, _DO_SLOW, _DO_WEAK);
 
 // AI_KL15:
 // -------
-// Not worth ADC, clamped rather than scaled, cannot read 12V.
-// Use DI_KL15 instead.
+// Clamped at 11V; mostly useful to help detect input sag and
+// avoid faulting outputs when T30 is low.
+// 
+
+#define ADC_SCALE_FACTOR_KL15   5507    // VALIDATED @ 8.368V
 
 // Initialize pins to suit the module.
 //

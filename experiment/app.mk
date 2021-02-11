@@ -1,7 +1,7 @@
 #
 # Makefile for the blink app
 #
-PRODUCT		 = blink
+PRODUCT		 = experiment
 PRODUCT_DIR	:= $(patsubst %/,%,$(dir $(lastword $(MAKEFILE_LIST))))
 LIB_MODULES	 = mscan adc pwm
 

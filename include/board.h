@@ -1,5 +1,5 @@
 /*
- * Board-specific defines.
+ * Board/module-specific defines.
  */
 
 #ifndef _BOARD_H_
