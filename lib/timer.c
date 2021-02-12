@@ -25,9 +25,15 @@ static timer_t      *timer_list;
 static timer_call_t *timer_call_list;
 static volatile __data uint16_t timebase_high_word;
 
+#define TIMER_LIST_END      (timer_t *)&timer_list
+#define TIMER_CALL_LIST_END (timer_call_t *)&timer_call_list
+
 void
 time_init(void)
 {
+    timer_list = TIMER_LIST_END;
+    timer_call_list = TIMER_CALL_LIST_END;
+
     TPM2SC = 0;
     TPM2SC_CLKSx = 2;   // select fixed clock
     TPM2SC_PS = 0;      // /1 prescaler
@@ -93,6 +99,7 @@ void
 timer_register(timer_t *timer)
 __critical {
     assert(timer != NULL);
+    assert(timer->_next == NULL);
 
     // singly-linked insertion at head
     timer->_next = timer_list;
@@ -103,6 +110,7 @@ void
 timer_call_register(timer_call_t *call)
 __critical {
     assert(call != NULL);
+    assert(call->_next == NULL);
     assert(call->callback != NULL);
 
     // singly-linked insertion at head
@@ -120,7 +128,7 @@ __interrupt(VectorNumber_Vtpm2ch1)
 
     // update timers
     for (timer_t *t = timer_list;
-         t != NULL;
+         t != TIMER_LIST_END;
          t = t->_next) {
         if (t->delay_ms > 0) {
             t->delay_ms--;
@@ -129,7 +137,7 @@ __interrupt(VectorNumber_Vtpm2ch1)
 
     // run timer calls
     for (timer_call_t *tc = timer_call_list;
-         tc != NULL;
+         tc != TIMER_CALL_LIST_END;
          tc = tc->_next) {
 
         // if the call is active...
@@ -138,9 +146,11 @@ __interrupt(VectorNumber_Vtpm2ch1)
             if (--tc->delay_ms == 0) {
                 // run the callback
                 tc->callback();
-                // and reload the delay
+                // and reload the delay (or leave it at
+                // zero for a one-shot)
                 tc->delay_ms = tc->period_ms;
             }
         }
     }
+    assert(!TPM2C1SC_CH1F);
 }
