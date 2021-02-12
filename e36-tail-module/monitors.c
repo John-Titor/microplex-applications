@@ -12,14 +12,16 @@ static
 adc_channel_state_t adc_cfg[] = {
     // fast-polled channels
     {
+        // T15 input - clamps to 11V
         .channel = AI_KL15,
-        .scale_factor = 4096        // XXX TBD
+        .scale_factor = ADC_SCALE_FACTOR_KL15
     },
 
     // slow-polled channels
     {
-        .channel = AI_OP_1,
-        .scale_factor = 4096        // XXX TBD
+        // fuel level sensor
+        .channel = AI_1,
+        .scale_factor = ADC_SCALE_FACTOR_10V
     },
 };
 static const uint8_t num_adc_fast_cfg = 1;
@@ -33,7 +35,7 @@ monitor_sample(void)
     static uint8_t phase;
 
     // all channels if phase == 0, only fast channels otherwise
-    uint8_t count = (phase == 0) ? num_adc_cfg : num_adc_fast_cfg;
+    const uint8_t count = (phase == 0) ? num_adc_cfg : num_adc_fast_cfg;
 
     for (uint8_t i = 0; i < count; i++) {
         adc_update(&adc_cfg[i]);
@@ -45,7 +47,7 @@ monitor_sample(void)
 }
 #pragma restore
 
-static timer_call_t monitor_call = {
+timer_call_t monitor_call = {
     .delay_ms = 100,
     .period_ms = 10,
     .callback = monitor_sample
@@ -57,13 +59,13 @@ monitor_init()
     // basic ADC init
     adc_init();
 
-    // set fuel level sensor to 10V mode
-    set_DO_30V_10V_1(AI_MODE_10V);
-
     // configure ADC channels
     for (uint8_t i = 0; i < num_adc_cfg; i++) {
         adc_configure(&adc_cfg[i]);
     }
+
+    // set fuel level sensor to 10V mode
+    set_DO_30V_10V_1(AI_MODE_10V);
 
     // register timer callback
     timer_call_register(&monitor_call);

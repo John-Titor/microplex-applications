@@ -42,13 +42,15 @@ main()
     // configure pins, etc.
     board_init();
 
+    //CAN_init(CAN_BR_500, CAN_FM_NONE, NULL);
+    CAN_init(CAN_BR_125, CAN_FM_NONE, NULL);
+    puts("tail module");
+
     // start the timebase and timer callouts
     time_init();
 
-    //CAN_init(CAN_BR_500, CAN_FM_NONE, NULL);
-    CAN_init(CAN_BR_125, CAN_FM_NONE, NULL);
-
-    debug("tail module");
+    // configure analog monitors
+    monitor_init();
 
     // main loop
     for (;;) {
