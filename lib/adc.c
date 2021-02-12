@@ -64,7 +64,7 @@ adc_result(adc_channel_state_t *state)
 #pragma nooverlay
 void
 adc_update(adc_channel_state_t *state)
-{
+__critical {
     ADCSC1_ADCH = state->channel;
     // wait for completion
     while (!ADCSC1_COCO)
