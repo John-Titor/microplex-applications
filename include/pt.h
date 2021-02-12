@@ -20,6 +20,9 @@
 /* empty cases in switches can cause this */
 #pragma disable_warning 110
 
+/* endless loops in pt's can cause this */
+#pragma disable_warning 126
+
 /*
  * Local continuation based on switch/case and line numbers.
  *

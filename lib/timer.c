@@ -13,7 +13,7 @@
  * of the system) and also to make it safe to use in a __critical region;
  * time_us can only handle one wrap before it needs the overflow handler to
  * run and adjust the timebase high word.
- * 
+ *
  */
 
 #include <assert.h>

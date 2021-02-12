@@ -94,8 +94,8 @@ dump_mem(uint16_t start, uint16_t end)
 #endif
 
 adc_channel_state_t adc_cfg = {
-    .channel = AI_OP_1,
-    .scale_factor = ADC_SCALE_FACTOR_DO
+    .channel = AI_CS_1,
+    .scale_factor = ADC_SCALE_FACTOR_DO_I
 };
 
 static void
@@ -103,7 +103,7 @@ sample_adc(void)
 __reentrant {
     adc_update(&adc_cfg);
 }
-volatile timer_call_t adc_call = { .delay_ms = 100, .period_ms = 100, .callback = sample_adc };
+volatile timer_call_t adc_call = { .delay_ms = 100, .period_ms = 10, .callback = sample_adc };
 volatile timer_t adc_timer = { .delay_ms = 1000 };
 
 void
@@ -134,7 +134,7 @@ main()
 
     // turn on HSD_1
     set_DO_HSD_1(true);
-//    set_DO_30V_10V_1(AI_MODE_30V);
+    //set_DO_30V_10V_1(AI_MODE_10V);
 
     // set up timer callback
     timer_call_register(&adc_call);

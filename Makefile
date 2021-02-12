@@ -83,7 +83,7 @@ format:
 # Basic style is what AS calls K&R
 FMT		+= --style=kr
 
-# Indent using 8-space tabs
+# Indent using 4 spaces per level
 FMT		+= --indent=spaces=4
 
 # Don't make backups
