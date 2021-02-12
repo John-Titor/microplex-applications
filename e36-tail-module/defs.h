@@ -16,6 +16,13 @@ extern void can_listen(struct pt *pt);
 extern void can_report(struct pt *pt);
 
 /*
+ * Brake light behaviours.
+ */
+
+extern void brake_thread(struct pt *pt);
+extern void brake_light_request(bool on);
+
+/*
  * Analog monitors.
  */
 

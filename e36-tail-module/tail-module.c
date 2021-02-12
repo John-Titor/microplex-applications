@@ -33,6 +33,7 @@ void default_handler() __interrupt(32)
 struct pt pt_can_listener = pt_init();
 struct pt pt_can_reporter = pt_init();
 struct pt pt_output_manager = pt_init();
+struct pt pt_brakes = pt_init();
 
 void
 main()
@@ -58,6 +59,7 @@ main()
         can_listen(&pt_can_listener);
         can_report(&pt_can_reporter);
         output_thread(&pt_output_manager);
+        brake_thread(&pt_brakes);
     }
 }
 
