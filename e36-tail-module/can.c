@@ -8,13 +8,18 @@
 
 #include "defs.h"
 
+#define CAN_IDLE_TIMEOUT    500
+#define CAN_REPORT_INTERVAL 500
+
 static CAN_message msg_buf;
 
 void
 can_listen(struct pt *pt)
 {
-    static timer_t  can_idle_timer = { .delay_ms = 500 };
+    static timer_t  can_idle_timer = { .delay_ms = CAN_IDLE_TIMEOUT };
+
     pt_begin(pt);
+    timer_register(&can_idle_timer);
 
     while (pt_running(pt)) {
         pt_wait(pt, CAN_recv(&msg_buf) || timer_expired(can_idle_timer));
@@ -30,7 +35,7 @@ can_listen(struct pt *pt)
             if (msg_buf.dlc == 8) {
 
                 // we're hearing CAN, so clear the fault and reset the timer
-                timer_reset(can_idle_timer, 500);
+                timer_reset(can_idle_timer, CAN_IDLE_TIMEOUT);
                 fault_clear_system(SYS_FAULT_CAN_TIMEOUT);
 
                 // turn brake lights on / off as requested
@@ -43,6 +48,7 @@ can_listen(struct pt *pt)
         // if we haven't heard a useful CAN message for a while...
         if (timer_expired(can_idle_timer)) {
             fault_set_system(SYS_FAULT_CAN_TIMEOUT);
+            timer_reset(can_idle_timer, CAN_IDLE_TIMEOUT);
         }
     }
     pt_end(pt);
@@ -51,12 +57,11 @@ can_listen(struct pt *pt)
 void
 can_report(struct pt *pt)
 {
-    static volatile timer_t can_report_timer = { .delay_ms = 100 };
+    static volatile timer_t can_report_timer = { .delay_ms = CAN_REPORT_INTERVAL };
     static uint8_t live_counter;
 
     pt_begin(pt);
     timer_register(&can_report_timer);
-    monitor_init();
 
     while (pt_running(pt)) {
         pt_wait(pt, timer_expired(can_report_timer));
@@ -93,7 +98,7 @@ can_report(struct pt *pt)
         msg_buf.data[7] = live_counter++;
         CAN_send_blocking(&msg_buf);
 
-        timer_reset(can_report_timer, 500);
+        timer_reset(can_report_timer, CAN_REPORT_INTERVAL);
     }
     pt_end(pt);
 }
