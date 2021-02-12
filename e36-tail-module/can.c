@@ -1,6 +1,5 @@
 /*
  * CAN messaging
- *
  */
 
 #include <mscan.h>
@@ -21,7 +20,7 @@ can_listen(struct pt *pt)
     pt_begin(pt);
     timer_register(&can_idle_timer);
 
-    while (pt_running(pt)) {
+    for (;;) {
         pt_wait(pt, CAN_recv(&msg_buf) || timer_expired(can_idle_timer));
 
         switch (msg_buf.id.mscan_id) {
@@ -63,17 +62,17 @@ can_report(struct pt *pt)
     pt_begin(pt);
     timer_register(&can_report_timer);
 
-    while (pt_running(pt)) {
+    for (;;) {
+        uint16_t mon_val;
         pt_wait(pt, timer_expired(can_report_timer));
 
         // Status report message (custom)
         //
-        uint16_t fuel_mv = monitor_get(MON_FUEL_LEVEL);
-
         msg_buf.id.mscan_id = MSCAN_ID_EXTENDED(0x0f00000);
         msg_buf.dlc = 8;
-        msg_buf.data[0] = fuel_mv & 0xff;
-        msg_buf.data[1] = fuel_mv >> 8;
+        mon_val = monitor_get(MON_FUEL_LEVEL);
+        msg_buf.data[0] = mon_val & 0xff;
+        msg_buf.data[1] = mon_val >> 8;
         msg_buf.data[2] = fault_system.raw;
         msg_buf.data[3] = fault_output[0].raw;
         msg_buf.data[4] = fault_output[1].raw;
@@ -81,15 +80,15 @@ can_report(struct pt *pt)
         msg_buf.data[6] = fault_output[3].raw;
         msg_buf.data[7] = live_counter++;
         CAN_send_blocking(&msg_buf);
+        pt_yield(pt);
 
-        // Debug message
+        // Debug messages
         //
-
-        uint16_t kl15_mv = monitor_get(MON_KL15);
         msg_buf.id.mscan_id = MSCAN_ID_EXTENDED(0x0f00001);
         msg_buf.dlc = 8;
-        msg_buf.data[0] = kl15_mv & 0xff;
-        msg_buf.data[1] = kl15_mv >> 8;
+        mon_val = monitor_get(MON_KL15);
+        msg_buf.data[0] = mon_val & 0xff;
+        msg_buf.data[1] = mon_val >> 8;
         msg_buf.data[2] = 0;
         msg_buf.data[3] = 0;
         msg_buf.data[4] = 0;
@@ -97,6 +96,41 @@ can_report(struct pt *pt)
         msg_buf.data[6] = 0;
         msg_buf.data[7] = live_counter++;
         CAN_send_blocking(&msg_buf);
+        pt_yield(pt);
+
+        msg_buf.id.mscan_id = MSCAN_ID_EXTENDED(0x0f00002);
+        msg_buf.dlc = 8;
+        mon_val = monitor_get(MON_OUT_V_1);
+        msg_buf.data[0] = mon_val & 0xff;
+        msg_buf.data[1] = mon_val >> 8;
+        mon_val = monitor_get(MON_OUT_V_2);
+        msg_buf.data[2] = mon_val & 0xff;
+        msg_buf.data[3] = mon_val >> 8;
+        mon_val = monitor_get(MON_OUT_V_3);
+        msg_buf.data[4] = mon_val & 0xff;
+        msg_buf.data[5] = mon_val >> 8;
+        mon_val = monitor_get(MON_OUT_V_4);
+        msg_buf.data[6] = mon_val & 0xff;
+        msg_buf.data[7] = mon_val >> 8;
+        CAN_send_blocking(&msg_buf);
+        pt_yield(pt);
+
+        msg_buf.id.mscan_id = MSCAN_ID_EXTENDED(0x0f00003);
+        msg_buf.dlc = 8;
+        mon_val = monitor_get(MON_OUT_I_1);
+        msg_buf.data[0] = mon_val & 0xff;
+        msg_buf.data[1] = mon_val >> 8;
+        mon_val = monitor_get(MON_OUT_I_2);
+        msg_buf.data[2] = mon_val & 0xff;
+        msg_buf.data[3] = mon_val >> 8;
+        mon_val = monitor_get(MON_OUT_I_3);
+        msg_buf.data[4] = mon_val & 0xff;
+        msg_buf.data[5] = mon_val >> 8;
+        mon_val = monitor_get(MON_OUT_I_4);
+        msg_buf.data[6] = mon_val & 0xff;
+        msg_buf.data[7] = mon_val >> 8;
+        CAN_send_blocking(&msg_buf);
+        pt_yield(pt);
 
         timer_reset(can_report_timer, CAN_REPORT_INTERVAL);
     }

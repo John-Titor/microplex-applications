@@ -61,11 +61,6 @@
  * DI_CAN_ERR       PORT_F.3    -   CAN transceiver error signal
  * FREQ_1           PORT_D.2    2   Frequency input (shares pin with AI_1)
  *                                  also on TPM1C0
- * DI_KL15          PORT_B.6    6   KL15 input signal
- * DI_CS_1          PORT_B.2    -   DO_HSD_1 status signal
- * DI_CS_2          PORT_A.2    -   DO_HSD_2 status signal
- * DI_CS_3          PORT_B.3    -   DO_HSD_3 status signal
- * DI_CS_4          PORT_B.4    -   DO_HSD_4 status signal
  *
  * Digital outputs  port        pin
  * ---------------------------------------------------------------------------
@@ -161,11 +156,7 @@ _DI_PIN(FREQ_1,         D, 2, _DI_NO_PULL);
 _DI_PIN(AI_1,           B, 5, _DI_NO_PULL);
 _DI_PIN(AI_2,           A, 6, _DI_NO_PULL);
 _DI_PIN(AI_3,           A, 7, _DI_NO_PULL);
-_DI_PIN(DI_KL15,        B, 6, _DI_NO_PULL);
-_DI_PIN(DI_CS_1,        B, 2, _DI_PULL_UP);
-_DI_PIN(DI_CS_2,        A, 2, _DI_PULL_UP);
-_DI_PIN(DI_CS_3,        B, 3, _DI_PULL_UP);
-_DI_PIN(DI_CS_4,        B, 4, _DI_PULL_UP);
+_DI_PIN(AI_KL15,        B, 6, _DI_NO_PULL);
 
 _DO_PIN(CAN_EN,         F, 0, 1, _DO_SLOW, _DO_WEAK);
 _DO_PIN(CAN_WAKE,       E, 5, 0, _DO_SLOW, _DO_WEAK);
@@ -220,6 +211,8 @@ _DO_PIN(CAN_STB_N,      F, 2, 1, _DO_SLOW, _DO_WEAK);
 // To calculate the scaling factor, take mV-per-count and
 // multiply by 512.
 //
+// Current sense outputs are the same but for mA.
+//
 // AI_1/2/3:
 // --------
 // 1K pullup mode: TBD
@@ -231,18 +224,18 @@ _DO_PIN(CAN_STB_N,      F, 2, 1, _DO_SLOW, _DO_WEAK);
 // AI_OP_1/2/3/4:
 // -------------
 
-#define ADC_SCALE_FACTOR_DO     16494   // VALIDATED @ 11.46V
+#define ADC_SCALE_FACTOR_DO_V   16494   // VALIDATED @ 11.46V
 
 // AI_CS_1/2/3/4:
 // -------------
-// Not worth ADC, as these are logic signals. Use DI_CS_1/2/3/4
-// instead.
+
+#define ADC_SCALE_FACTOR_DO_I   4531    // VALIDATED @ 1.000A
 
 // AI_KL15:
 // -------
 // Clamped at 11V; mostly useful to help detect input sag and
 // avoid faulting outputs when T30 is low.
-// 
+//
 
 #define ADC_SCALE_FACTOR_KL15   5507    // VALIDATED @ 8.368V
 
@@ -254,19 +247,15 @@ _DO_PIN(CAN_STB_N,      F, 2, 1, _DO_SLOW, _DO_WEAK);
 static inline void
 board_init()
 {
-    init_DI_CAN_ERR();
-    init_DI_KL15();
-    init_DI_CS_1();
-    init_DI_CS_2();
-    init_DI_CS_3();
-    init_DI_CS_4();
-
-    init_AI_1();
-    init_AI_2();
-    init_AI_3();
-
+    init_DI_CAN_ERR();  // digital inputs
     init_FREQ_1();
-    init_CAN_EN();
+
+    init_AI_1();        // analog inputs that can be used
+    init_AI_2();        // as digital inputs
+    init_AI_3();
+    init_AI_KL15();
+
+    init_CAN_EN();      // digital outputs
     init_CAN_WAKE();
     init_DO_20MA_1();
     init_DO_20MA_2();

@@ -1,24 +1,7 @@
 /*
  * High-side drivers.
  *
- * ref: VNQ5050K-E datasheet
- *
- * Theory of operation:
- *
- * Output state changes are requested by a call to output_request(),
- * which sets the target state for the output.
- *
- * The output thread updates the output state, and then after 2ms
- * evaluates the state of the output.  
- *
- * Outputs that are off are checked for stuck-on conditions, and
- * fault status updated as appropriate.
- * XXX TODO: add open-load check
- *
- * Outputs that are on are checked for over-current, over-temperature
- * and open-circuit conditions, and fault status update as appropriate.
- * Over-current and over-temperature conditions will also result in the
- * output being turned off. 
+ * ref: VNQ5050AK-E datasheet
  */
 
 #include <assert.h>
@@ -29,39 +12,33 @@
 
 #include "defs.h"
 
-#define NUM_OUTPUTS             4
+#define SENSE_OPEN_CURRENT      50      // mA: below this, output is open
+#define SENSE_OVERLOAD_CURRENT  2250    // mA: over this, output is overloaded
+#define SENSE_STUCK_VOLTAGE     2000    // mV: over this, output is stuck/shorted to +12
 
-// voltage levels in raw ADC counts
-#define OUT_STUCK_THRESHOLD     200 // above this -> output shorted to power
-#define OUT_OVERLOAD_THRESHOLD  800 // below this -> output in current-limit
+#define OUTPUT_TIMEOUT_TICKS    5       // iterations of the thread loop
 
-static bool     output_state[NUM_OUTPUTS];
+static output_state_t   output_state[_OUTPUT_ID_MAX];
 
-static void     output_set_requested();
-static bool     output_sense(uint8_t output);
 static uint16_t output_voltage(uint8_t output);
+static uint16_t output_current(uint8_t output);
+static void     output_control(uint8_t output, bool on);
 static void     output_check(uint8_t output);
 
 void
 output_thread(struct pt *pt)
 {
-    static timer_t check_timer;
+    static timer_t check_timer = { .delay_ms = 0 };
     pt_begin(pt);
 
     timer_register(&check_timer);
 
-    adc_configure_direct(AI_OP_1);
-    adc_configure_direct(AI_OP_2);
-    adc_configure_direct(AI_OP_3);
-    adc_configure_direct(AI_OP_4);
+    for (;;) {
 
-    while (pt_running(pt)) {
-        // set outputs
-        output_set_requested();
-
-        // check outputs
-        timer_reset(check_timer, 2);
+        // check outputs / timeout ticks every 50ms
+        timer_reset(check_timer, 50);
         pt_wait(pt, timer_expired(check_timer));
+
         output_check(0);
         pt_yield(pt);
         output_check(1);
@@ -73,47 +50,53 @@ output_thread(struct pt *pt)
     pt_end(pt);
 }
 
+/*
+ * Client request for output on/off.
+ */
 void
-output_request(uint8_t output, bool on)
+output_request(uint8_t output, output_state_t state)
 {
-    assert(output < NUM_OUTPUTS);
+    assert(output < _OUTPUT_ID_MAX);
 
-    output_state[output] = on;
-}
-
-static void
-output_set_requested()
-{
-    set_DO_HSD_1(output_state[0]);
-    set_DO_HSD_2(output_state[1]);
-    set_DO_HSD_3(output_state[2]);
-    set_DO_HSD_4(output_state[3]);
-}
-
-static bool
-output_sense(uint8_t output)
-{
-    assert(output < NUM_OUTPUTS);
-    switch (output) {
-    case 0: return test_DI_CS_1();
-    case 1: return test_DI_CS_2();
-    case 2: return test_DI_CS_3();
-    case 3: return test_DI_CS_4();
+    switch(state) {
+    case OUTPUT_STATE_OFF:
+        output_state[output] = OUTPUT_STATE_OFF;
+        output_control(output, false);
+        break;
+    case OUTPUT_STATE_ON:
+        if (output_state[output] == OUTPUT_STATE_OFF) {
+            output_control(output, true);
+            output_state[output] = OUTPUT_STATE_ON;
+        }
+        break;
+    default:
+        assert(false);
     }
-    return false;
+
 }
 
 static uint16_t
 output_voltage(uint8_t output)
 {
-    assert(output < NUM_OUTPUTS);
     switch (output) {
-    case 0: return adc_sample_direct(AI_OP_1);
-    case 1: return adc_sample_direct(AI_OP_2);
-    case 2: return adc_sample_direct(AI_OP_3);
-    case 3: return adc_sample_direct(AI_OP_4);
+    case 0: return monitor_get(MON_OUT_V_1);
+    case 1: return monitor_get(MON_OUT_V_2);
+    case 2: return monitor_get(MON_OUT_V_3);
+    case 3: return monitor_get(MON_OUT_V_4);
+    default: assert(false); return(0);
     }
-    return false;
+}
+
+static uint16_t
+output_current(uint8_t output)
+{
+    switch (output) {
+    case 0: return monitor_get(MON_OUT_I_1);
+    case 1: return monitor_get(MON_OUT_I_2);
+    case 2: return monitor_get(MON_OUT_I_3);
+    case 3: return monitor_get(MON_OUT_I_4);
+    default: assert(false); return(0);
+    }
 }
 
 static void
@@ -124,6 +107,7 @@ output_control(uint8_t output, bool on)
     case 1: set_DO_HSD_2(on); break;
     case 2: set_DO_HSD_3(on); break;
     case 3: set_DO_HSD_4(on); break;
+    default: assert(false);
     }
 }
 
@@ -132,50 +116,42 @@ output_control(uint8_t output, bool on)
 static void
 output_check(uint8_t output)
 {
-    // XXX might want to check for some conditions (e.g. short cleared)
-    //     less often?
 
-    if (output_state[output]) {
-        // output is on
+    const uint16_t output_mV = output_voltage(output);
+    const uint16_t output_mA = output_current(output);
+    debug("%u: %umV %umA", output, output_mV, output_mA);
 
-        // check for over-current
-        if (output_voltage(output) < OUT_OVERLOAD_THRESHOLD) {
-            // current limiting in play, need to disable output
-            fault_set_output(output, OUT_FAULT_OVERLOAD);
-            output_state[output] = false;
-        } else if (!output_sense(output)) {
-            __critical {
-                // turn the output off
-                output_control(output, false);
-                // wait ~1/2 the min tPOL
-                time_wait_us(100);
-                if (output_sense(output)) {
-                    // sense has gone high, fault was overtemp, turn off
-                    fault_set_system(SYS_FAULT_OVERTEMP);
-                    output_state[output] = false;
-                } else {
-                    // sense has not gone high, fault is open load
-                    // turn the output back on, as it may come good
-                    fault_set_output(output, OUT_FAULT_OPEN);
-                    output_control(output, true);
-                }
-            }
-        } else {
-            // output seems OK
-            fault_clear_output(output, OUT_FAULT_OPEN);
-            fault_clear_output(output, OUT_FAULT_OVERLOAD);
-        }
-
-    } else {
-        // output is off
-
-        // check for short to power / stuck on
-        if (output_voltage(output) > OUT_STUCK_THRESHOLD) {
+    switch (output_state[output]) {
+    case OUTPUT_STATE_OFF:
+        if (output_mV > SENSE_STUCK_VOLTAGE) {
             fault_set_output(output, OUT_FAULT_STUCK);
         } else {
-            // output seems OK
             fault_clear_output(output, OUT_FAULT_STUCK);
         }
-        // XXX TODO: check for open-circuit
+        // open-load check?
+        break;
+
+    case OUTPUT_STATE_ON:
+        if (output_mA < SENSE_OPEN_CURRENT) {
+            fault_set_output(output, OUT_FAULT_OPEN);
+        } else {
+            fault_clear_output(output, OUT_FAULT_OPEN);
+        }
+        if (output_mA > SENSE_OVERLOAD_CURRENT) {
+            fault_set_output(output, OUT_FAULT_OVERLOAD);
+            output_control(output, false);
+            output_state[output] = OUTPUT_TIMEOUT_TICKS;
+        }
+        break;
+
+    default:
+        assert(output_state[output] <= OUTPUT_TIMEOUT_TICKS);
+
+        // Decrement the timeout counter and if it's cleared,
+        // try turning the output back on.
+        if (--output_state[output] == OUTPUT_STATE_ON) {
+            output_control(output, true);
+        }
+        break;
     }
 }

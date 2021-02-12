@@ -11,20 +11,23 @@
 static
 adc_channel_state_t adc_cfg[] = {
     // fast-polled channels
-    {
-        // T15 input - clamps to 11V
-        .channel = AI_KL15,
-        .scale_factor = ADC_SCALE_FACTOR_KL15
-    },
+    // XXX 70us channel * 9 channels = ~650us, need to be careful not to 
+    //     run over the 1000us max callout time - maybe split this into
+    //     two groups.
+    { .channel = AI_KL15, .scale_factor = ADC_SCALE_FACTOR_KL15 },
+    { .channel = AI_OP_1, .scale_factor = ADC_SCALE_FACTOR_DO_V },
+    { .channel = AI_OP_2, .scale_factor = ADC_SCALE_FACTOR_DO_V },
+    { .channel = AI_OP_3, .scale_factor = ADC_SCALE_FACTOR_DO_V },
+    { .channel = AI_OP_4, .scale_factor = ADC_SCALE_FACTOR_DO_V },
+    { .channel = AI_CS_1, .scale_factor = ADC_SCALE_FACTOR_DO_I },
+    { .channel = AI_CS_2, .scale_factor = ADC_SCALE_FACTOR_DO_I },
+    { .channel = AI_CS_3, .scale_factor = ADC_SCALE_FACTOR_DO_I },
+    { .channel = AI_CS_4, .scale_factor = ADC_SCALE_FACTOR_DO_I },
 
     // slow-polled channels
-    {
-        // fuel level sensor
-        .channel = AI_1,
-        .scale_factor = ADC_SCALE_FACTOR_10V
-    },
+    { .channel = AI_1,    .scale_factor = ADC_SCALE_FACTOR_10V  },
 };
-static const uint8_t num_adc_fast_cfg = 1;
+static const uint8_t num_adc_fast_cfg = 9;
 static const uint8_t num_adc_cfg = sizeof(adc_cfg) / sizeof(adc_cfg[0]);
 
 #pragma save
@@ -41,15 +44,15 @@ monitor_sample(void)
         adc_update(&adc_cfg[i]);
     }
 
-    if (phase++ >= 10) {
+    if (phase++ >= 20) {
         phase = 0;
     }
 }
 #pragma restore
 
 timer_call_t monitor_call = {
-    .delay_ms = 100,
-    .period_ms = 10,
+    .delay_ms = 1,
+    .period_ms = 5,
     .callback = monitor_sample
 };
 

@@ -10,13 +10,13 @@
 
 #include "defs.h"
 
-fault_status_t  fault_output[NUM_OUTPUTS];
+fault_status_t  fault_output[_OUTPUT_ID_MAX];
 fault_status_t  fault_system;
 
 void
 fault_set_output(output_id_t id, output_fault_t fault)
 {
-    assert(id < NUM_OUTPUTS);
+    assert(id < _OUTPUT_ID_MAX);
     assert(fault < 8);
 
     fault_output[id].fields.current |= 1 << fault;
@@ -26,7 +26,7 @@ fault_set_output(output_id_t id, output_fault_t fault)
 void
 fault_clear_output(output_id_t id, output_fault_t fault)
 {
-    assert(id < NUM_OUTPUTS);
+    assert(id < _OUTPUT_ID_MAX);
     assert(fault < 8);
 
     fault_output[id].fields.current &= ~(1 << fault);
