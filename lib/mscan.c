@@ -25,7 +25,7 @@ typedef enum {
     WM_SENT
 } CAN_wait_mode;
 
-static bool _CAN_send(const CAN_message *msg,
+static bool _CAN_send(const CAN_message_t *msg,
                       CAN_wait_mode wait);
 
 void
@@ -80,7 +80,7 @@ CAN_init(CAN_bitrate bitrate,
 }
 
 bool
-CAN_send(const CAN_message *msg)
+CAN_send(const CAN_message_t *msg)
 {
     assert(msg != NULL);
 
@@ -89,7 +89,7 @@ CAN_send(const CAN_message *msg)
 }
 
 void
-CAN_send_blocking(const CAN_message *msg)
+CAN_send_blocking(const CAN_message_t *msg)
 {
     assert(msg != NULL);
 
@@ -98,7 +98,7 @@ CAN_send_blocking(const CAN_message *msg)
 }
 
 void
-CAN_send_debug(const CAN_message *msg)
+CAN_send_debug(const CAN_message_t *msg)
 {
     assert(msg != NULL);
 
@@ -109,7 +109,7 @@ CAN_send_debug(const CAN_message *msg)
 }
 
 static bool
-_CAN_send(const CAN_message *msg,
+_CAN_send(const CAN_message_t *msg,
           CAN_wait_mode wait_mode)
 {
     assert(msg != NULL);
@@ -157,7 +157,7 @@ _CAN_send(const CAN_message *msg,
 }
 
 bool
-CAN_recv(CAN_message *msg)
+CAN_recv(CAN_message_t *msg)
 {
     assert(msg != NULL);
 
@@ -189,7 +189,7 @@ CAN_recv(CAN_message *msg)
 int
 putchar(int c)
 {
-    static CAN_message msg = {
+    static CAN_message_t msg = {
         .id = { .mscan_id = MSCAN_ID_EXTENDED(0x1ffffffe) },
         .dlc = 0,
         .priority = 128

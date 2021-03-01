@@ -2,6 +2,9 @@
  * MSCAN driver.
  */
 
+#ifndef _MSCAN_H
+#define _MSCAN_H
+
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -59,7 +62,7 @@ typedef struct {
     uint8_t			data[8];
     uint8_t			dlc;
     uint8_t			priority;
-} CAN_message;
+} CAN_message_t;
 
 // Init MSCAN for the given bitrate.
 //
@@ -74,18 +77,20 @@ extern void	CAN_init(CAN_bitrate bitrate,
 //
 // Returns false if the message cannot be queued immediately.
 //
-extern bool CAN_send(const CAN_message *msg);
+extern bool CAN_send(const CAN_message_t *msg);
 
 // Send a CAN message; waits for buffer space.
 //
-extern void CAN_send_blocking(const CAN_message *msg);
+extern void CAN_send_blocking(const CAN_message_t *msg);
 
 // Send a CAN message for debug purposes; waits for buffer space
 // and waits for it to be sent.
 //
 // Debug messages are always ordered vs. other debug messages.
-extern void CAN_send_debug(const CAN_message *msg);
+extern void CAN_send_debug(const CAN_message_t *msg);
 
 // Attempt to receive a CAN message
 //
-extern bool CAN_recv(CAN_message *msg);
+extern bool CAN_recv(CAN_message_t *msg);
+
+#endif // _MSCAN_H

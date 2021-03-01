@@ -10,6 +10,9 @@
  * LDO:                 MIC2951
  */
 
+#ifndef _MICROPLEX_7X_H
+#define _MICROPLEX_7X_H
+
 #include <mc9s08dz60.h>
 
 /*
@@ -97,6 +100,7 @@
  * AI_OP_2          1           11  DO_HSD_2 voltage
  * AI_OP_3          8           10  DO_HSD_3 voltage
  * AI_OP_4          9           9   DO_HSD_4 voltage
+ * AI_TEMP          26          -   Internal temperature sensor
  *
  * PWM outputs      timer1 channel  digital pin
  * ---------------------------------------------------------------------------
@@ -194,6 +198,7 @@ _DO_PIN(CAN_STB_N,      F, 2, 1, _DO_SLOW, _DO_WEAK);
 #define AI_OP_2             1
 #define AI_OP_3             8
 #define AI_OP_4             9
+#define AI_TEMP             26
 
 #define AI_MODE_10V         false
 #define AI_MODE_30V         true
@@ -239,6 +244,12 @@ _DO_PIN(CAN_STB_N,      F, 2, 1, _DO_SLOW, _DO_WEAK);
 
 #define ADC_SCALE_FACTOR_KL15   5507    // VALIDATED @ 8.368V
 
+// AI_TEMP
+// -------
+// Calculated for nominal Vdd (5V)
+
+#define ADC_SCALE_FACTOR_TEMP   610     // XXX VALIDATE
+
 // Initialize pins to suit the module.
 //
 // Note: analog inputs are configured as digital inputs
@@ -274,3 +285,5 @@ board_init()
     // enable interrupts
     __asm__("\tcli");
 }
+
+#endif // _MICROPLEX_7X_H

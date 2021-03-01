@@ -2,16 +2,18 @@
  * Input monitoring.
  */
 
-#include <adc.h>
 #include <assert.h>
+
+#include <adc.h>
 #include <timer.h>
 
 #include "defs.h"
 
+// Table here must monitor_channel_t
 static
 adc_channel_state_t adc_cfg[] = {
     // fast-polled channels
-    // XXX 70us channel * 9 channels = ~650us, need to be careful not to 
+    // XXX 70us channel * 9 channels = ~650us, need to be careful not to
     //     run over the 1000us max callout time - maybe split this into
     //     two groups.
     { .channel = AI_KL15, .scale_factor = ADC_SCALE_FACTOR_KL15 },
@@ -26,9 +28,13 @@ adc_channel_state_t adc_cfg[] = {
 
     // slow-polled channels
     { .channel = AI_1,    .scale_factor = ADC_SCALE_FACTOR_10V  },
+    { .channel = AI_3,    .scale_factor = ADC_SCALE_FACTOR_30V  },
+    { .channel = AI_TEMP, .scale_factor = ADC_SCALE_FACTOR_TEMP },
 };
 static const uint8_t num_adc_fast_cfg = 9;
 static const uint8_t num_adc_cfg = sizeof(adc_cfg) / sizeof(adc_cfg[0]);
+//static_assert(_MON_ID_MAX == (sizeof(adc_cfg) / sizeof(adc_cfg[0]),
+//              "monitor_channel_t / adc_cfg mismatch");
 
 #pragma save
 #pragma nooverlay

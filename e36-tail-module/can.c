@@ -2,7 +2,6 @@
  * CAN messaging
  */
 
-#include <mscan.h>
 #include <timer.h>
 
 #include "defs.h"
@@ -10,7 +9,7 @@
 #define CAN_IDLE_TIMEOUT    500
 #define CAN_REPORT_INTERVAL 500
 
-static CAN_message msg_buf;
+static CAN_message_t msg_buf;
 
 void
 can_listen(struct pt *pt)
@@ -21,27 +20,35 @@ can_listen(struct pt *pt)
     timer_register(&can_idle_timer);
 
     for (;;) {
-        pt_wait(pt, CAN_recv(&msg_buf) || timer_expired(can_idle_timer));
 
-        switch (msg_buf.id.mscan_id) {
+        // check for a CAN message
+        if (CAN_recv(&msg_buf)) {
 
-        // Brake lights on/of, sent from the DDE
-        //
-        // http://www.loopybunny.co.uk/CarPC/can/0A8.html
-        //
-        // XXX need some sort of story around missing-message timeouts
-        case MSCAN_ID(0xa8):
-            if (msg_buf.dlc == 8) {
+            // we're hearing CAN, so reset the idle timer
+            timer_reset(can_idle_timer, CAN_IDLE_TIMEOUT);
 
-                // we're hearing CAN, so clear the fault and reset the timer
-                timer_reset(can_idle_timer, CAN_IDLE_TIMEOUT);
-                fault_clear_system(SYS_FAULT_CAN_TIMEOUT);
+            switch (msg_buf.id.mscan_id) {
 
-                // turn brake lights on / off as requested
-                output_request(OUTPUT_BRAKE_L, msg_buf.data[7] > 20);
-                output_request(OUTPUT_BRAKE_R, msg_buf.data[7] > 20);
+            // Brake lights on/of, sent from the DDE
+            //
+            // http://www.loopybunny.co.uk/CarPC/can/0A8.html
+            //
+            // XXX need some sort of story around missing-message timeouts
+            case MSCAN_ID(0xa8):
+                if (msg_buf.dlc == 8) {
+
+                    // turn brake lights on / off as requested
+                    brake_light_request(msg_buf.data[7] > 20);
+                }
+                break;
+
+
+            // EDIABAS-style request
+            case MSCAN_ID(0x6f1):
+                if (msg_buf.dlc == 8) {
+                    cas_jbe_recv(NULL);
+                }
             }
-            break;
         }
 
         // if we haven't heard a useful CAN message for a while...
@@ -49,6 +56,8 @@ can_listen(struct pt *pt)
             fault_set_system(SYS_FAULT_CAN_TIMEOUT);
             timer_reset(can_idle_timer, CAN_IDLE_TIMEOUT);
         }
+
+        pt_yield(pt);
     }
     pt_end(pt);
 }
@@ -66,69 +75,63 @@ can_report(struct pt *pt)
         uint16_t mon_val;
         pt_wait(pt, timer_expired(can_report_timer));
 
-        // Status report message (custom)
-        //
         msg_buf.id.mscan_id = MSCAN_ID_EXTENDED(0x0f00000);
         msg_buf.dlc = 8;
-        mon_val = monitor_get(MON_FUEL_LEVEL);
+        mon_val = monitor_get(MON_T30_VOLTAGE);
         msg_buf.data[0] = mon_val & 0xff;
         msg_buf.data[1] = mon_val >> 8;
-        msg_buf.data[2] = fault_system.raw;
-        msg_buf.data[3] = fault_output[0].raw;
-        msg_buf.data[4] = fault_output[1].raw;
-        msg_buf.data[5] = fault_output[2].raw;
-        msg_buf.data[6] = fault_output[3].raw;
-        msg_buf.data[7] = live_counter++;
+        mon_val = monitor_get(MON_T15_VOLTAGE);
+        msg_buf.data[2] = mon_val & 0xff;
+        msg_buf.data[3] = mon_val >> 8;
+        mon_val = monitor_get(MON_TEMPERATURE);
+        if (mon_val < 1396) {
+            // not interesting
+            mon_val = 0;
+        } else {
+            mon_val -= 1396;    // Vtemp25
+            mon_val *= 275;     // scale to mC°
+            mon_val /= 1000;    // back to C°
+            mon_val += 25;      // offset
+        }
+        msg_buf.data[4] = mon_val;
+        mon_val = monitor_get(MON_FUEL_LEVEL);
+        msg_buf.data[5] = mon_val / 50; // scale 0-5000 -> %
+        msg_buf.data[6] = output_state_requested;
+        msg_buf.data[7] = 0;
         CAN_send_blocking(&msg_buf);
         pt_yield(pt);
 
-        // Debug messages
-        //
         msg_buf.id.mscan_id = MSCAN_ID_EXTENDED(0x0f00001);
         msg_buf.dlc = 8;
-        mon_val = monitor_get(MON_KL15);
-        msg_buf.data[0] = mon_val & 0xff;
-        msg_buf.data[1] = mon_val >> 8;
-        msg_buf.data[2] = 0;
-        msg_buf.data[3] = 0;
+        mon_val = monitor_get(MON_OUT_V_1);
+        msg_buf.data[0] = mon_val / 100;
+        mon_val = monitor_get(MON_OUT_V_2);
+        msg_buf.data[1] = mon_val / 100;
+        mon_val = monitor_get(MON_OUT_V_3);
+        msg_buf.data[2] = mon_val / 100;
+        mon_val = monitor_get(MON_OUT_V_4);
+        msg_buf.data[3] = mon_val / 100;
+        mon_val = monitor_get(MON_OUT_I_1);
+        msg_buf.data[4] = mon_val / 10;
+        mon_val = monitor_get(MON_OUT_I_2);
+        msg_buf.data[5] = mon_val / 10;
+        mon_val = monitor_get(MON_OUT_I_3);
+        msg_buf.data[6] = mon_val / 10;
+        mon_val = monitor_get(MON_OUT_I_4);
+        msg_buf.data[7] = mon_val / 10;
+        CAN_send_blocking(&msg_buf);
+        pt_yield(pt);
+
+        msg_buf.id.mscan_id = MSCAN_ID_EXTENDED(0x0f00001);
+        msg_buf.dlc = 8;
+        msg_buf.data[0] = fault_output[0].raw;
+        msg_buf.data[1] = fault_output[1].raw;
+        msg_buf.data[2] = fault_output[2].raw;
+        msg_buf.data[3] = fault_output[3].raw;
         msg_buf.data[4] = 0;
         msg_buf.data[5] = 0;
         msg_buf.data[6] = 0;
-        msg_buf.data[7] = live_counter++;
-        CAN_send_blocking(&msg_buf);
-        pt_yield(pt);
-
-        msg_buf.id.mscan_id = MSCAN_ID_EXTENDED(0x0f00002);
-        msg_buf.dlc = 8;
-        mon_val = monitor_get(MON_OUT_V_1);
-        msg_buf.data[0] = mon_val & 0xff;
-        msg_buf.data[1] = mon_val >> 8;
-        mon_val = monitor_get(MON_OUT_V_2);
-        msg_buf.data[2] = mon_val & 0xff;
-        msg_buf.data[3] = mon_val >> 8;
-        mon_val = monitor_get(MON_OUT_V_3);
-        msg_buf.data[4] = mon_val & 0xff;
-        msg_buf.data[5] = mon_val >> 8;
-        mon_val = monitor_get(MON_OUT_V_4);
-        msg_buf.data[6] = mon_val & 0xff;
-        msg_buf.data[7] = mon_val >> 8;
-        CAN_send_blocking(&msg_buf);
-        pt_yield(pt);
-
-        msg_buf.id.mscan_id = MSCAN_ID_EXTENDED(0x0f00003);
-        msg_buf.dlc = 8;
-        mon_val = monitor_get(MON_OUT_I_1);
-        msg_buf.data[0] = mon_val & 0xff;
-        msg_buf.data[1] = mon_val >> 8;
-        mon_val = monitor_get(MON_OUT_I_2);
-        msg_buf.data[2] = mon_val & 0xff;
-        msg_buf.data[3] = mon_val >> 8;
-        mon_val = monitor_get(MON_OUT_I_3);
-        msg_buf.data[4] = mon_val & 0xff;
-        msg_buf.data[5] = mon_val >> 8;
-        mon_val = monitor_get(MON_OUT_I_4);
-        msg_buf.data[6] = mon_val & 0xff;
-        msg_buf.data[7] = mon_val >> 8;
+        msg_buf.data[7] = fault_system.raw;
         CAN_send_blocking(&msg_buf);
         pt_yield(pt);
 

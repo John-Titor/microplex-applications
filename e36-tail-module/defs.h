@@ -2,25 +2,47 @@
  * General definitions.
  */
 
+#ifndef _DEFS_H
+#define _DEFS_H
+
 #include <stdbool.h>
 #include <stdint.h>
 
 #include <board.h>
+#include <mscan.h>
 #include <pt.h>
 
 /*
  * CAN threads.
  */
 
+extern struct pt pt_can_listener;
+extern struct pt pt_can_reporter;
+extern struct pt pt_cas_jbe_emulator;
+
 extern void can_listen(struct pt *pt);
 extern void can_report(struct pt *pt);
 
+extern void cas_jbe_recv(const CAN_message_t *msg);
+extern void cas_jbe_emulator(struct pt *pt);
+
 /*
- * Brake light behaviours.
+ * Various light behaviours.
  */
 
+extern struct pt pt_brakes;
+extern struct pt pt_tails;
+
+typedef enum {
+    LIGHT_OFF,
+    LIGHT_ON
+} light_state_t;
+
 extern void brake_thread(struct pt *pt);
-extern void brake_light_request(bool on);
+extern void tails_thread(struct pt *pt);
+extern void brake_light_request(light_state_t state);
+extern void tail_light_request(light_state_t state);
+extern void rain_light_request(light_state_t state);
 
 /*
  * Analog monitors.
@@ -28,7 +50,7 @@ extern void brake_light_request(bool on);
 
 typedef enum {
     // Fast-sampled channels.
-    MON_KL15,
+    MON_T15_VOLTAGE,
     MON_OUT_V_1,
     MON_OUT_V_2,
     MON_OUT_V_3,
@@ -40,6 +62,9 @@ typedef enum {
 
     // Slow-sampled channels.
     MON_FUEL_LEVEL,
+    MON_T30_VOLTAGE,
+    MON_TEMPERATURE,
+    _MON_ID_MAX
 } monitor_channel_t;
 
 extern void monitor_init(void);
@@ -49,18 +74,35 @@ extern uint16_t monitor_get(monitor_channel_t channel);
  * High-side driver outputs.
  */
 
+extern struct pt pt_output_manager;
+extern uint8_t output_state_requested;
+
 typedef enum {
-    OUTPUT_BRAKE_L,
-    OUTPUT_BRAKE_R,
-    OUTPUT_TAIL,
-    OUTPUT_RAIN,
+    OUTPUT_BRAKE_L,     // left brake
+    OUTPUT_BRAKE_R,     // right brake
+    OUTPUT_TAILS,       // tail / rain lights
+    OUTPUT_T15,         // local T15
     _OUTPUT_ID_MAX
 } output_id_t;
 
+/*
+ * Output state.
+ *
+ * States < OUTPUT_STATE_ON are effectively 'off' states.
+ */
 typedef enum {
-    OUTPUT_STATE_OFF,
-    OUTPUT_STATE_ON,
-    OUTPUT_STATE_TIMEOUT
+    OUTPUT_STATE_OFF            = 0x00,
+
+    OUTPUT_STATE_TIMEOUT        = 0x01,
+    OUTPUT_STATE_TIMEOUT_MAX    = 0x05,
+
+    OUTPUT_STATE_ON             = 0x10,
+
+    OUTPUT_STATE_OPEN           = 0x11,
+    OUTPUT_STATE_OPEN_TRIGGER   = 0x13,
+    OUTPUT_STATE_OPEN_MAX       = 0x14,
+
+    _OUTPUT_STATE_MAX
 } output_state_t;
 
 extern void output_thread(struct pt *pt);
@@ -68,6 +110,9 @@ extern void output_request(uint8_t channel, output_state_t state);
 
 /*
  * Faults.
+ *
+ * XXX due to current encoding strategy, only 4 output
+ *     and 4 system faults are supported
  */
 
 typedef enum {
@@ -78,11 +123,11 @@ typedef enum {
 } output_fault_t;
 
 typedef enum {
+    SYS_FAULT_T30_PLAUSIBILITY,
+    SYS_FAULT_T15_PLAUSIBILITY,
     SYS_FAULT_CAN_TIMEOUT,
-    SYS_FAULT_OVERTEMP,
-    SYS_FAULT_MAX,
-    // XXX fuel level sensor plausibility
-    // XXX KL15 voltage plausibility
+    SYS_FAULT_OVER_TEMPERATURE,
+    _SYS_FAULT_MAX,
 } system_fault_t;
 
 typedef union {
@@ -101,3 +146,4 @@ extern void fault_clear_output(output_id_t id, output_fault_t fault);
 extern void fault_set_system(system_fault_t fault);
 extern void fault_clear_system(system_fault_t fault);
 
+#endif // _DEFS_H

@@ -2,8 +2,8 @@
  * Board/module-specific defines.
  */
 
-#ifndef _BOARD_H_
-#define _BOARD_H_
+#ifndef _BOARD_H
+#define _BOARD_H
 
 #include <stdint.h>
 #include <stdio.h>
@@ -69,4 +69,4 @@
 #error Unsupported board
 #endif
 
-#endif // _BOARD_H_
+#endif // _BOARD_H

@@ -2,6 +2,9 @@
  * Timers and timebase.
  */
 
+#ifndef _TIMER_H
+#define _TIMER_H
+
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -48,5 +51,10 @@ extern void         timer_call_register(timer_call_t *call);
 // test whether a timer or callback has expired
 #define timer_expired(_timer)       ((_timer).delay_ms == 0)
 
+// test whether a timer has been registered
+#define timer_registered(_timer)	((_timer)._next != NULL)
+
 extern void Vtpm2ovf_handler(void) __interrupt(VectorNumber_Vtpm2ovf);
 extern void Vtpm2ch1_handler(void) __interrupt(VectorNumber_Vtpm2ch1);
+
+#endif // _TIMER_H
