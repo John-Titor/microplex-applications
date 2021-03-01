@@ -1,0 +1,104 @@
+Functional requirements:
+  ☐ react to BMW brake light on/off messages
+    msgid 0xa8 - http://www.loopybunny.co.uk/CarPC/can/0A8.html
+  ☐ manage tail/brake lights
+  ☐ report 0-5V signal from AI_1 / fuel level sensor
+  ☐ report open-circuit and overload faults via CAN
+  ☐ report open-circuit and overload faults via keypad LEDs
+  ☐ report output-on status via CAN
+  ☐ report output-on status via keypad LEDs
+  ☐ report temperature via CAN
+  ☐ report T30 voltage via CAN
+  ☐ emulate the E90 JBE / CAS sufficient for Protools / XHP
+
+Requirements TBD:
+  ☐ T15 handling:
+    - will the AIM unit send 0x130 messages with T15 status?
+    - will T15 be supplied by wire?
+  ☐ CAN timeout behaviour
+    - default light patterns?
+  ☐ tail/rail controls
+    - listen directly to keypad?
+    - mediated by AIM unit?
+    - behaviour cycles on successive activations? or two separate controls?
+  ☐ fuel level; mV or %
+  ☐ mediate Blink Marine CANOpen keypad <-> AIM PDM-08 comms by emulating "motorsports mode"
+    reserved buttons for tail/rain lights?
+
+Assembly requirements:
+  Pins:
+    1: ground
+    2: fuel 0-5V
+    3: T30
+    4: CANL
+    5: CANH
+    6: T15 (TBD)
+    7: T30
+    8: NC
+    9: T15 out (TBD)
+    10: tail/rain lights
+    11: brake lights 1
+    12: brake lights 2
+
+  Fuse: 10A
+  Brake lights: ~700mA per circuit
+  Tail lights: ~300mA total
+
+Outputs:
+  ☐ switch on/off as commanded
+  ☐ detect over-current conditions
+  ☐ detect open-circuit conditions
+
+Brake lights:
+  two circuits for redundancy / patterns
+  ☐ off when commanded off
+  ☐ report whether on / off via CAN
+  ☐ turn-on sequence when commanded on
+    rapid alternation between circuits 1 & 2 for ~1s max
+
+Tail/rain lights:
+  one circuit only
+  ☐ on steady for tail light
+  ☐ blink 2Hz for rain light
+  ☐ rain has priority over tail
+  ☐ report whether on/off via CAN
+
+Faults:
+  ✔ two copies of each fault; "current" and "stored" @done (21-02-13 17:55)
+  ✔ report via CAN @done (21-02-13 17:55)
+
+CAN:
+  ☐ status message 1
+    msgid 0x0f00000
+    - T30 voltage
+    - T15 voltage
+    - temperature
+    - fuel level
+
+  ☐ status message 2
+    msgid 0x0f00001
+    - output current
+    - output voltage
+
+  ☐ fault message
+    msgid 0x0f00010
+    - output faults, current & saved
+    - system faults, current & saved
+
+E90 CAS / JBE emulation:
+  ☐ generate 0x130 CAN messages with appropriate ignition status
+  ☐ respond to 0x6fe CAN messages as necessary to placate Protools / XHP
+
+TBD: Motorsports Mode emulation:
+  See Blink Marine "PKP2300-Motorsport" document
+  ☐ 100ms report interval
+  ☐ 500kbps to remain BMW-compatible (check with AIM documentation!)
+  ☐ key 1 (top left) will be "ignition", toggle mode only
+    ☐ turn-on with T30 below 10V (XXX choose sensible value) will result in red flash and no turn-on
+    ☐ toggle state will be preserved across watchdog resets
+    ☐ LED 0 will follow toggle state
+  ☐ keys 2-6 emulated directly as passthrough
+  ☐ LEDs 2-6 passed directly through
+  ☐ button 7 "light mode" cycles off -> on -> rain -> off
+  ☐ button 8 reserved
+

@@ -44,7 +44,7 @@ $(TARGETS):
 	@$(MAKE) -f $(app)/app.mk $(action) \
 		APP=$(APP)
 
-.PHONY:	$(ACTIONS) $(TARGETS)
+.PHONY:	$(ACTIONS) $(TARGETS) all build clean flash
 
 help:
 	@echo ""
