@@ -81,6 +81,19 @@ can_report(struct pt *pt)
         uint16_t mon_val;
         pt_wait(pt, timer_expired(can_report_timer));
 
+        // send BMW fuel level message
+        msg_buf.id.mscan_id = MSCAN_ID(0x349);
+        msg_buf.dlc = 5;
+        mon_val = monitor_get(MON_FUEL_LEVEL) * 6; // approximate scale 0-0x8000
+        msg_buf.data[0] = mon_val & 0xff;
+        msg_buf.data[1] = mon_val >> 8;
+        msg_buf.data[2] = mon_val & 0xff;
+        msg_buf.data[3] = mon_val >> 8;
+        msg_buf.data[4] = 0;
+
+        CAN_send_blocking(&msg_buf);
+        pt_yield(pt);
+
         msg_buf.id.mscan_id = MSCAN_ID_EXTENDED(0x0f00000);
         msg_buf.dlc = 8;
         mon_val = monitor_get(MON_T30_VOLTAGE);
