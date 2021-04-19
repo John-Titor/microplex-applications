@@ -39,6 +39,7 @@ struct pt pt_tails;
 
 // Filters
 // 0x0a8 (DDE brake lights)
+// 0x21a (BMW lighting)
 // 0x6f1 (Protool)
 // -
 // -
@@ -47,14 +48,14 @@ static const CAN_filters can_filters = {
     .filter_16 = {
         .accept = {
             (uint16_t)0x0a8 << 5,
-                            (uint16_t)0x6f1 << 5,
-                            (uint16_t)0x0001,
-                            (uint16_t)0x0001
+            (uint16_t)0x21a << 5,
+            (uint16_t)0x6f1 << 5,
+            (uint16_t)0x0001
         },
         .mask = {
             (uint16_t)0xfffe,
             (uint16_t)0xfffe,
-            (uint16_t)0x0000,
+            (uint16_t)0xfffe,
             (uint16_t)0x0000
         },
     }
@@ -73,7 +74,7 @@ main()
 
     //CAN_init(CAN_BR_500, CAN_FM_NONE, NULL);
     CAN_init(CAN_BR_125, CAN_FM_4x16, &can_filters);
-    puts("tail module");
+    puts("E36 tail module");
 
     // start the timebase and timer callouts
     time_init();
