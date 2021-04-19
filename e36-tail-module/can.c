@@ -29,25 +29,29 @@ can_listen(struct pt *pt)
 
             switch (msg_buf.id.mscan_id) {
 
-            // Brake lights on/of, sent from the DDE
+            // BMW brake pedal message
             //
-            // http://www.loopybunny.co.uk/CarPC/can/0A8.html
-            //
-            // XXX need some sort of story around missing-message timeouts
             case MSCAN_ID(0xa8):
                 if (msg_buf.dlc == 8) {
-
-                    // turn brake lights on / off as requested
-                    brake_light_request(msg_buf.data[7] > 20);
+                    brake_light_request((msg_buf.data[7] > 20) ? LIGHT_ON : LIGHT_OFF);
                 }
                 break;
 
+            // BMW lighting message
+            //
+            case MSCAN_ID(0x21a):
+                if (msg_buf.dlc == 3) {
+                    tail_light_request((msg_buf.data[0] & 0x04) ? LIGHT_ON : LIGHT_OFF);
+                    rain_light_request((msg_buf.data[0] & 0x40) ? LIGHT_ON : LIGHT_OFF);
+                }
+                break;
 
             // EDIABAS-style request
             case MSCAN_ID(0x6f1):
                 if (msg_buf.dlc == 8) {
                     cas_jbe_recv(NULL);
                 }
+                break;
             }
         }
 
