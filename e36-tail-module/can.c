@@ -55,6 +55,8 @@ can_listen(struct pt *pt)
         if (timer_expired(can_idle_timer)) {
             fault_set_system(SYS_FAULT_CAN_TIMEOUT);
             timer_reset(can_idle_timer, CAN_IDLE_TIMEOUT);
+
+            // XXX add 'limp' mode behaviour here
         }
 
         pt_yield(pt);
@@ -122,7 +124,7 @@ can_report(struct pt *pt)
         CAN_send_blocking(&msg_buf);
         pt_yield(pt);
 
-        msg_buf.id.mscan_id = MSCAN_ID_EXTENDED(0x0f00001);
+        msg_buf.id.mscan_id = MSCAN_ID_EXTENDED(0x0f00002);
         msg_buf.dlc = 8;
         msg_buf.data[0] = fault_output[0].raw;
         msg_buf.data[1] = fault_output[1].raw;
