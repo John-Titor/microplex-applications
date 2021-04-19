@@ -9,7 +9,7 @@
 #include <stdbool.h>
 
 typedef enum {
-    CAN_BR_100,		// index into the BTRx table
+    CAN_BR_100,     // index into the BTRx table
     CAN_BR_125,
     CAN_BR_250,
     CAN_BR_500,
@@ -17,7 +17,7 @@ typedef enum {
 } CAN_bitrate;
 
 typedef enum {
-    CAN_FM_2x32,	// maps to the CANIDAC IDAMx bits
+    CAN_FM_2x32,    // maps to the CANIDAC IDAMx bits
     CAN_FM_4x16,
     CAN_FM_8x8,
     CAN_FM_NONE
@@ -25,43 +25,43 @@ typedef enum {
 
 typedef union {
     struct {
-        uint32_t	accept[2];
-        uint32_t	mask[2];
+        uint32_t    accept[2];
+        uint32_t    mask[2];
     } filter_32;
     struct {
-        uint16_t	accept[4];
-        uint16_t	mask[4];
+        uint16_t    accept[4];
+        uint16_t    mask[4];
     } filter_16;
     struct {
-        uint8_t		accept[8];
-        uint8_t		mask[8];
+        uint8_t     accept[8];
+        uint8_t     mask[8];
     } filter_8;
 } CAN_filters;
 
 // Generate MSCAN ID register values at compile time.
 //
 // extended ID, no RTR
-#define MSCAN_ID_EXTENDED(_id)	(((((uint32_t)(_id)) << 3) & (uint32_t)0xffe00000)	\
-                                 | ((uint32_t)3 << 19)								\
+#define MSCAN_ID_EXTENDED(_id)  (((((uint32_t)(_id)) << 3) & (uint32_t)0xffe00000)  \
+                                 | ((uint32_t)3 << 19)                              \
                                  | (((uint32_t)(_id) << 1) & (uint32_t)0x0007fffe))
 
 // extended ID, RTR
-#define MSCAN_ID_EXT_RTR(_id)	(MSCAN_ID_EXT(_id) | 1)
+#define MSCAN_ID_EXT_RTR(_id)   (MSCAN_ID_EXT(_id) | 1)
 
 // standard ID, no RTR
-#define MSCAN_ID(_id)		((uint32_t)(_id) << 21)
+#define MSCAN_ID(_id)       ((uint32_t)(_id) << 21)
 
 // standard ID, RTR
-#define MSCAN_ID_RTR(_id)	(MSCAN_ID(_id) | ((uint32_t)1 << 20))
+#define MSCAN_ID_RTR(_id)   (MSCAN_ID(_id) | ((uint32_t)1 << 20))
 
 typedef struct {
     union {
-        uint32_t	mscan_id;
-        uint8_t		regs[4];
+        uint32_t    mscan_id;
+        uint8_t     regs[4];
     } id;
-    uint8_t			data[8];
-    uint8_t			dlc;
-    uint8_t			priority;
+    uint8_t         data[8];
+    uint8_t         dlc;
+    uint8_t         priority;
 } CAN_message_t;
 
 // Init MSCAN for the given bitrate.
@@ -69,7 +69,7 @@ typedef struct {
 // Set filter_mode to CAN_FM_NONE and pass NULL for filters
 // to receive all messages.
 //
-extern void	CAN_init(CAN_bitrate bitrate,
+extern void CAN_init(CAN_bitrate bitrate,
                      CAN_filter_mode filter_mode,
                      const CAN_filters *filters);
 
