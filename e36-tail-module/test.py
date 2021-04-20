@@ -503,7 +503,7 @@ def do_monitor(stdscr, interface, args):
     spindex = 0
     while True:
         statwin.refresh()
-        msg = interface.recv(0.2)
+        msg = interface.recv(0.1)
         if msg is not None:
             logger.log_can(msg)
             # XXX handle module-reset message?
@@ -532,7 +532,7 @@ def do_monitor(stdscr, interface, args):
 
         statwin.addstr(1, 1, '/-\\-'[spindex])
 
-        if sw_can and ((time.time() - tx_time) > 0.5):
+        if sw_can and ((time.time() - tx_time) > 0.1):
             if tx_phase:
                 msg = MSG_brake(sw_brake)
             else:

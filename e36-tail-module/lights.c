@@ -49,8 +49,8 @@ brake_thread(struct pt *pt)
 
     // Turn lights off
     //
-    output_request(OUTPUT_BRAKE_L, false);
-    output_request(OUTPUT_BRAKE_R, false);
+    output_request(OUTPUT_BRAKE_L, OUTPUT_STATE_OFF);
+    output_request(OUTPUT_BRAKE_R, OUTPUT_STATE_OFF);
 
     // Wait for light to be turned on.
     //
@@ -63,33 +63,33 @@ brake_thread(struct pt *pt)
     // If we have been off for > 4s, do the brake-on
     // animation.
     //
-    if (!timer_expired(brake_reset_timer)) {
+    if (timer_expired(brake_reset_timer)) {
 
-        output_request(OUTPUT_BRAKE_L, true);
-        output_request(OUTPUT_BRAKE_R, true);
+        output_request(OUTPUT_BRAKE_L, OUTPUT_STATE_ON);
+        output_request(OUTPUT_BRAKE_R, OUTPUT_STATE_ON);
         pt_delay(pt, brake_timer, 200);
 
-        output_request(OUTPUT_BRAKE_L, false);
-        output_request(OUTPUT_BRAKE_R, true);
-        pt_delay(pt, brake_timer, 200);
+        output_request(OUTPUT_BRAKE_L, OUTPUT_STATE_OFF);
+        output_request(OUTPUT_BRAKE_R, OUTPUT_STATE_ON);
+        pt_delay(pt, brake_timer, 100);
 
-        output_request(OUTPUT_BRAKE_L, true);
-        output_request(OUTPUT_BRAKE_R, false);
-        pt_delay(pt, brake_timer, 200);
+        output_request(OUTPUT_BRAKE_L, OUTPUT_STATE_ON);
+        output_request(OUTPUT_BRAKE_R, OUTPUT_STATE_OFF);
+        pt_delay(pt, brake_timer, 100);
 
-        output_request(OUTPUT_BRAKE_L, false);
-        output_request(OUTPUT_BRAKE_R, true);
-        pt_delay(pt, brake_timer, 200);
+        output_request(OUTPUT_BRAKE_L, OUTPUT_STATE_OFF);
+        output_request(OUTPUT_BRAKE_R, OUTPUT_STATE_ON);
+        pt_delay(pt, brake_timer, 100);
 
-        output_request(OUTPUT_BRAKE_L, true);
-        output_request(OUTPUT_BRAKE_R, false);
-        pt_delay(pt, brake_timer, 200);
+        output_request(OUTPUT_BRAKE_L, OUTPUT_STATE_ON);
+        output_request(OUTPUT_BRAKE_R, OUTPUT_STATE_OFF);
+        pt_delay(pt, brake_timer, 100);
     }
 
     // Lights stay on now until thread is reset.
     //
-    output_request(OUTPUT_BRAKE_L, true);
-    output_request(OUTPUT_BRAKE_R, true);
+    output_request(OUTPUT_BRAKE_L, OUTPUT_STATE_ON);
+    output_request(OUTPUT_BRAKE_R, OUTPUT_STATE_ON);
 
     pt_end(pt);
 }

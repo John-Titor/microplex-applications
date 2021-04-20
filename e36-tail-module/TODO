@@ -1,8 +1,8 @@
 Functional requirements:
   ✔ react to BMW brake light message @done (21-04-13 20:05)
   ✔ react to BMW lighting message (rain = rear fog) @done (21-04-13 20:32)
-  ✔ report 0-5V signal from AI_1 / fuel level sensor via BMW fuel level message @done (21-04-13 20:37)
-  ✔ report status, temperature, T30 voltage via CAN (for diagnostics) @done (21-04-13 20:37)
+  ☐ report 0-5V signal from AI_1 / fuel level sensor via BMW fuel level message
+  ☐ report status, temperature, T30 voltage via CAN (for diagnostics)
   ☐ emulate the E90 JBE / CAS sufficient for Protools / XHP
   ☐ power-up on T15, power-down when off
   ☐ on CAN timeout, blink left/right slowly
@@ -31,6 +31,7 @@ CAN:
   ✔ send standard frame @done (21-04-20 11:59)
   ✔ send extended frame @done (21-04-20 11:59)
   ✔ receive standard frame and match ID @done (21-04-20 11:59)
+  ☐ filter specific message IDs
 
 Outputs:
   ☐ switch on/off as commanded
@@ -42,7 +43,7 @@ Brake lights:
   two circuits for redundancy / patterns
   ✔ off when commanded off @done (21-04-13 20:05)
   ☐ report whether on / off via CAN
-  ✔ turn-on sequence when commanded on @done (21-04-13 20:05)
+  ☐ turn-on sequence when commanded on
     rapid alternation between circuits 1 & 2 for ~1s max
     only if have been off for > 4s
   ☐ blink slowly left/right on CAN timeout
@@ -71,34 +72,34 @@ Faults:
   ✔ report via CAN @done (21-02-13 17:55)
 
 CAN output:
-  ✔ status message 1 @done (21-04-13 20:38)
+  ☐ status message 1
     msgid 0x0f00000
     - T30 voltage
     - T15 voltage
     - temperature
     - fuel level
 
-  ✔ status message 2 @done (21-04-13 20:38)
+  ☐ status message 2
     msgid 0x0f00001
     - output current
     - output voltage
 
-  ✔ fault message @done (21-04-13 20:38)
+  ☐ fault message
     msgid 0x0f00010
     - output faults, current & saved
     - system faults, current & saved
 
 E90 CAS / JBE emulation:
-  ☐ generate 0x130 CAN messages with appropriate ignition status at 500ms intervals
+  ✔ generate 0x130 CAN messages with appropriate ignition status at 500ms intervals @done (21-04-20 12:17)
   ☐ respond to 0x6fe CAN messages as necessary to placate Protools / XHP
 
 Test harness:
   ✔ log console messages @done (21-04-18 19:58)
   ✔ log CAN messages in verbose mode @done (21-04-18 19:58)
   ☐ decode internal status messages
-  ☐ send brake status messages
-  ☐ send light status messages
+  ✔ send brake status messages @done (21-04-20 12:17)
+  ✔ send light status messages @done (21-04-20 12:17)
   ✔ control T15 @done (21-04-18 19:58)
 
 Issues:
-  ☐ non-extended-id CAN frames not received by test harness
+  ✔ non-extended-id CAN frames not received by test harness @done (21-04-20 12:17)
