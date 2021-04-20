@@ -37,12 +37,14 @@ Outputs:
   ☐ switch on/off as commanded
   ☐ detect over-current conditions
   ☐ detect open-circuit conditions
+  ☐ report output voltage
+  ☐ report output current
 
 Brake lights:
   msgid 0xa8 - http://www.loopybunny.co.uk/CarPC/can/0A8.html
   two circuits for redundancy / patterns
   ✔ off when commanded off @done (21-04-13 20:05)
-  ☐ report whether on / off via CAN
+  ✔ report whether on / off via CAN @done (21-04-20 14:03)
   ☐ turn-on sequence when commanded on
     rapid alternation between circuits 1 & 2 for ~1s max
     only if have been off for > 4s

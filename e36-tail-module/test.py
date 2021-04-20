@@ -189,7 +189,7 @@ class MSG_status_system(RXMessage):
                (False, 0),
                (False, 0),
                (False, 0),
-               (True, 0)]
+               (False, 0)]
 
     def __init__(self, raw):
         super().__init__(expected_id=0x0f00000,
@@ -227,9 +227,9 @@ class MSG_status_faults(RXMessage):
                (False, 0),
                (False, 0),
                (False, 0),
-               (True, 0),
-               (True, 0),
-               (True, 0),
+               (True, 0x11),
+               (True, 0x22),
+               (True, 0x33),
                (False, 0)]
 
     def __init__(self, raw):
@@ -301,12 +301,14 @@ class CANInterface(object):
 
 class ModuleState(object):
 
-    def __init__(self, win):
+    def __init__(self, win, logger):
         self._win = win
+        self._logger = logger
         self._can_in_timeout = False
         self._can_did_timeout = False
         self.module_resets = 0
         self.message_errors = 0
+        self.message_rx_count = 0
         self._reset()
 
     def _reset(self):
@@ -315,6 +317,7 @@ class ModuleState(object):
         self.status_faults = None
 
     def update(self, msg):
+        self.message_rx_count += 1
         try:
             self.status_system = MSG_status_system(msg)
         except MessageError:
@@ -325,6 +328,7 @@ class ModuleState(object):
                     self.status_faults = MSG_status_faults(msg)
                 except MessageError:
                     self.message_errors += 1
+                    self._logger.log(f"CAN? {msg}")
         self._can_in_timeout = False
 
     def timeout(self):
@@ -393,7 +397,7 @@ class ModuleState(object):
                 self._win.addstr(y, x, 'CAN', curses.color_pair(CYAN))
             self._win.addstr(y, x, '---', curses.A_DIM)
 
-        elif attr in ['module_resets', 'message_errors']:
+        elif attr in ['module_resets', 'message_errors', 'message_rx_count']:
             color = curses.A_DIM if val == 0 else curses.color_pair(RED)
             self._win.addstr(y, x, f'{val:{len}}', color)
 
@@ -412,15 +416,21 @@ class Logger(object):
         self._cons_buf = ""
 
     def log_can(self, msg):
-        if msg.arbitration_id == CONSOLE_ID:
-            for idx in range(0, msg.dlc):
-                if msg.data[idx] == 0:
-                    self._win.addstr(f"CONS: {self._cons_buf}\n")
-                    self._cons_buf = ""
-                else:
-                    self._cons_buf += chr(msg.data[idx])
-        elif self._verbose:
-            self._win.addstr(f"CAN: {msg}\n")
+        if self._verbose:
+            self.log(f"CAN: {msg}")
+
+    def log_console(self, msg):
+        if msg.arbitration_id != CONSOLE_ID:
+            raise KeyError
+        for idx in range(0, msg.dlc):
+            if msg.data[idx] == 0:
+                self.log(f"CONS: {self._cons_buf}")
+                self._cons_buf = ""
+            else:
+                self._cons_buf += chr(msg.data[idx])
+
+    def log(self, msg):
+        self._win.addstr(f"{msg}\n")
         self._win.refresh()
 
 
@@ -468,11 +478,10 @@ def do_monitor(stdscr, interface, args):
     curses.init_pair(CYAN, curses.COLOR_CYAN, curses.COLOR_BLACK)
 
     statwin = curses.newwin(18, 80, 0, 0)
-    state = ModuleState(statwin)
 
     statwin.addstr(1, 1, '-- Monitor Status -------------------------------------')
-    statwin.addstr(2, 1, 'Resets:           Message Errors:')
-    statwin.addstr(3, 1, 'Faults:')
+    statwin.addstr(2, 1, 'Resets:           Messages Recvd:')
+    statwin.addstr(3, 1, 'Faults:           Message Errors:')
 
     statwin.addstr(5, 1, '-- Module Status --------------------------------------')
     statwin.addstr(6, 1, 'T30      V  T15      V  Temp    °C')
@@ -492,6 +501,8 @@ def do_monitor(stdscr, interface, args):
     logwin = curses.newwin(maxy - 18, maxx, 18, 0)
     logger = Logger(logwin, args)
 
+    state = ModuleState(statwin, logger)
+
     def status_flag(x, flag):
         if flag:
             statwin.addstr(15, x, 'ON ', curses.color_pair(GREEN))
@@ -500,18 +511,19 @@ def do_monitor(stdscr, interface, args):
 
     last_send_time = 0
 
-    spindex = 0
     while True:
         statwin.refresh()
         msg = interface.recv(0.1)
         if msg is not None:
-            logger.log_can(msg)
-            # XXX handle module-reset message?
-            state.update(msg)
-            spindex = 0 if spindex == 3 else spindex + 1
+            try:
+                logger.log_console(msg)
+            except KeyError:
+                logger.log_can(msg)
+                state.update(msg)
 
         state.print_attr(2, 9, 'module_resets')
-        state.print_attr(2, 35, 'message_errors')
+        state.print_attr(2, 35, 'message_rx_count')
+        state.print_attr(3, 35, 'message_errors')
         state.print_attr(3, 9, 'module_faults')
 
         state.print_attr(6, 4, 't30_voltage')
@@ -529,8 +541,6 @@ def do_monitor(stdscr, interface, args):
         status_flag(34, sw_lights)
         status_flag(46, sw_rain)
         status_flag(57, sw_can)
-
-        statwin.addstr(1, 1, '/-\\-'[spindex])
 
         if sw_can and ((time.time() - tx_time) > 0.1):
             if tx_phase:
