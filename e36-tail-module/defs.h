@@ -7,21 +7,44 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
+
+#include "config.h"
 
 #include <board.h>
 #include <mscan.h>
 #include <pt.h>
 
 /*
+ * Console logging / debug thread.
+ */
+
+extern struct pt pt_console_report;
+
+extern void console_report(struct pt *pt);
+
+#ifdef CONSOLE_DO_LOG
+# define LOG(fmt, args...)  printf(fmt " \n", ## args)
+#else
+# define LOG(fmt, args...)  do {} while(0)
+#endif
+
+
+/*
  * CAN threads.
  */
 
 extern struct pt pt_can_listener;
-extern struct pt pt_can_reporter;
-extern struct pt pt_cas_jbe_emulator;
+extern struct pt pt_can_report_fuel;
+extern struct pt pt_can_report_diags;
+
+extern unsigned can_rx_count;
 
 extern void can_listen(struct pt *pt);
-extern void can_report(struct pt *pt);
+extern void can_report_fuel(struct pt *pt);
+extern void can_report_diags(struct pt *pt);
+
+extern struct pt pt_cas_jbe_emulator;
 
 extern void cas_jbe_recv(const CAN_message_t *msg);
 extern void cas_jbe_emulator(struct pt *pt);
@@ -37,6 +60,10 @@ typedef enum {
     LIGHT_OFF,
     LIGHT_ON
 } light_state_t;
+
+extern light_state_t brake_light_requested;
+extern light_state_t tail_light_requested;
+extern light_state_t rain_light_requested;
 
 extern void brake_thread(struct pt *pt);
 extern void tails_thread(struct pt *pt);

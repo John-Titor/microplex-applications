@@ -6,7 +6,6 @@
 #define _BOARD_H
 
 #include <stdint.h>
-#include <stdio.h>
 #include <stdbool.h>
 
 #include "mc9s08dz60.h"

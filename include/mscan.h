@@ -40,19 +40,20 @@ typedef union {
 
 // Generate MSCAN ID register values at compile time.
 //
-// extended ID, no RTR
-#define MSCAN_ID_EXTENDED(_id)  (((((uint32_t)(_id)) << 3) & (uint32_t)0xffe00000)  \
-                                 | ((uint32_t)3 << 19)                              \
-                                 | (((uint32_t)(_id) << 1) & (uint32_t)0x0007fffe))
+// extended ID
+#define MSCAN_ID_EXT(_id)               ((((((uint32_t)(_id)) << 3) & (uint32_t)0xffe00000) \
+                                         | (((uint32_t)(_id) << 1) & (uint32_t)0x0007fffe)) \
+                                         | ((uint32_t)3 << 19))
 
-// extended ID, RTR
-#define MSCAN_ID_EXT_RTR(_id)   (MSCAN_ID_EXT(_id) | 1)
+// standard ID
+#define MSCAN_ID(_id)                   ((uint32_t)(_id) << 21)
 
-// standard ID, no RTR
-#define MSCAN_ID(_id)       ((uint32_t)(_id) << 21)
+// match an extended ID
+#define MSCAN_ID_MATCH_EXT(_id, _msg)   (_msg.id.mscan_id == MSCAN_ID_EXT(_id))
 
-// standard ID, RTR
-#define MSCAN_ID_RTR(_id)   (MSCAN_ID(_id) | ((uint32_t)1 << 20))
+// match a standard ID - must ignore x bits
+#define MSCAN_ID_MATCH(_id, _msg)       ((_msg.id.mscan_id & 0xfff80000) == MSCAN_ID(_id))
+
 
 typedef struct {
     union {

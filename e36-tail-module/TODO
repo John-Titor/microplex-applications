@@ -27,6 +27,11 @@ Assembly requirements:
   Brake lights: ~700mA per circuit
   Tail lights: ~300mA total
 
+CAN:
+  ✔ send standard frame @done (21-04-20 11:59)
+  ✔ send extended frame @done (21-04-20 11:59)
+  ✔ receive standard frame and match ID @done (21-04-20 11:59)
+
 Outputs:
   ☐ switch on/off as commanded
   ☐ detect over-current conditions
@@ -58,7 +63,8 @@ Rain light:
 Fuel level:
     msgid 0x349 - http://www.loopybunny.co.uk/CarPC/can/349.html
     full is 0x8000 per side
-  ☐ send at 2Hz
+  ✔ send at 2Hz @done (21-04-19 13:05)
+  ☐ tracks 0.5-4.5V input
 
 Faults:
   ✔ two copies of each fault; "current" and "stored" @done (21-02-13 17:55)
@@ -83,7 +89,7 @@ CAN output:
     - system faults, current & saved
 
 E90 CAS / JBE emulation:
-  ☐ generate 0x130 CAN messages with appropriate ignition status
+  ☐ generate 0x130 CAN messages with appropriate ignition status at 500ms intervals
   ☐ respond to 0x6fe CAN messages as necessary to placate Protools / XHP
 
 Test harness:
@@ -95,4 +101,4 @@ Test harness:
   ✔ control T15 @done (21-04-18 19:58)
 
 Issues:
-  ☐ non-extended-id CAN frames don't send
+  ☐ non-extended-id CAN frames not received by test harness

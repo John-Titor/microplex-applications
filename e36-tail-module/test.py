@@ -19,6 +19,7 @@ import struct
 import time
 import can
 import curses
+import time
 
 # colours we use
 RED = 1
@@ -43,7 +44,21 @@ class ModuleError(Exception):
     pass
 
 
-class TXMessage(can.Message):
+class TXMessageStd(can.Message):
+    """
+    Abstract for messages that will be sent.
+
+    Concrete classes set self._format and pass args to struct.pack()
+    that format to __init__.
+    """
+    def __init__(self, arbitration_id, *args):
+        super().__init__(arbitration_id=arbitration_id,
+                         is_extended_id=False,
+                         dlc=struct.calcsize(self._format),
+                         data=struct.pack(self._format, *args))
+
+
+class TXMessageExt(can.Message):
     """
     Abstract for messages that will be sent.
 
@@ -57,9 +72,9 @@ class TXMessage(can.Message):
                          data=struct.pack(self._format, *args))
 
 
-class MSG_mjs_power(TXMessage):
+class MSG_mjs_power(TXMessageExt):
     """mjs adapter power control message"""
-    _format = 'B'
+    _format = '>B'
 
     def __init__(self, t30_state, t15_state):
         if not t30_state:
@@ -71,9 +86,9 @@ class MSG_mjs_power(TXMessage):
         super().__init__(MJS_POWER_ID, arg)
 
 
-class MSG_brake(TXMessage):
+class MSG_brake(TXMessageStd):
     """BMW brake (etc.) status message"""
-    _format = 'BHHBBB'
+    _format = '>BHHBBB'
 
     def __init__(self, brake_state):
         super().__init__(BRAKE_CTRL_ID,
@@ -85,9 +100,9 @@ class MSG_brake(TXMessage):
                          32 if brake_state else 3)
 
 
-class MSG_lights(TXMessage):
+class MSG_lights(TXMessageStd):
     """BMW light control message"""
-    _format = 'BBB'
+    _format = '>BBB'
 
     def __init__(self, brake_light, tail_light, rain_light):
         super().__init__(LIGHT_CTRL_ID,
@@ -168,7 +183,7 @@ class MSG_ack(RXMessage):
 
 class MSG_status_system(RXMessage):
     """firmware system status message"""
-    _format = "<HHBBBB"
+    _format = ">HHBBBB"
     _filter = [(False, 0),
                (False, 0),
                (False, 0),
@@ -188,7 +203,7 @@ class MSG_status_system(RXMessage):
 
 class MSG_status_voltage_current(RXMessage):
     """firmware voltage/current report"""
-    _format = "<BBBBBBBB"
+    _format = ">BBBBBBBB"
     _filter = [(False, 0),
                (False, 0),
                (False, 0),
@@ -207,7 +222,7 @@ class MSG_status_voltage_current(RXMessage):
 
 class MSG_status_faults(RXMessage):
     """firmware fault status report"""
-    _format = "<BBBBBBBB"
+    _format = ">BBBBBBBB"
     _filter = [(False, 0),
                (False, 0),
                (False, 0),
@@ -233,6 +248,7 @@ class CANInterface(object):
 
     def send(self, message):
         """send the message"""
+        assert(message.dlc <= 8)
         self._bus.send(message, 1)
 
     def recv(self, timeout=2):
@@ -433,13 +449,13 @@ def do_monitor(stdscr, interface, args):
 
     module_id = interface.detect()
 
-
     sw_t15 = False
     sw_brake = False
     sw_lights = False
     sw_rain = False
     sw_can = False
-    tx_toggle = False
+    tx_phase = True
+    tx_time = time.time()
 
     curses.curs_set(False)
     curses.start_color()
@@ -488,10 +504,7 @@ def do_monitor(stdscr, interface, args):
     while True:
         statwin.refresh()
         msg = interface.recv(0.2)
-        if msg is None:
-            #state.timeout()
-            pass
-        else:
+        if msg is not None:
             logger.log_can(msg)
             # XXX handle module-reset message?
             state.update(msg)
@@ -519,15 +532,16 @@ def do_monitor(stdscr, interface, args):
 
         statwin.addstr(1, 1, '/-\\-'[spindex])
 
-        if sw_can:
-            if tx_toggle:
+        if sw_can and ((time.time() - tx_time) > 0.5):
+            if tx_phase:
                 msg = MSG_brake(sw_brake)
             else:
                 msg = MSG_lights(False, sw_lights, sw_rain)
                 # msg = MSG_lights(sw_brake, sw_lights, sw_rain)
             logger.log_can(msg)
             interface.send(msg)
-            tx_toggle = not tx_toggle
+            tx_time = time.time()
+            tx_phase = not tx_phase
 
         try:
             ch = stdscr.getkey()

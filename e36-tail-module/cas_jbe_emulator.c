@@ -223,13 +223,13 @@ cas_jbe_send_response(uint8_t respondent)
 static void
 cas_jbe_send_terminal_status(void)
 {
-    static timer_t terminal_status_timer = { .delay_ms = 100 };
+    static timer_t terminal_status_timer = { .delay_ms = 500 };
 
     if (!timer_registered(terminal_status_timer)) {
         timer_register(&terminal_status_timer);
     } 
     if (timer_expired(terminal_status_timer)) {
-        timer_reset(terminal_status_timer, 100);
+        timer_reset(terminal_status_timer, 500);
 
         CAN_message_t msg_buf;
         msg_buf.id.mscan_id = MSCAN_ID(0x130);
@@ -262,6 +262,7 @@ cas_jbe_recv(const CAN_message_t *msg)
     // seem to assume that in the broadcast case only one module
     // is talking at all at a time, so we never offer data from
     // more than one respondent at once.
+    //
     if ((msg->data[1] == 0x30) &&
         (msg->data[2] == 0x00) &&
         (msg->data[3] == 0x01) &&

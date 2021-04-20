@@ -7,9 +7,9 @@
 
 #include "defs.h"
 
-static light_state_t brake_light_requested;
-static light_state_t tail_light_requested;
-static light_state_t rain_light_requested;
+light_state_t brake_light_requested;
+light_state_t tail_light_requested;
+light_state_t rain_light_requested;
 
 void
 brake_light_request(light_state_t state)

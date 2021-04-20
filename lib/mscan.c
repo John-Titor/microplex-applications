@@ -190,7 +190,7 @@ int
 putchar(int c)
 {
     static CAN_message_t msg = {
-        .id = { .mscan_id = MSCAN_ID_EXTENDED(0x1ffffffe) },
+        .id = { .mscan_id = MSCAN_ID_EXT(0x1ffffffe) },
         .dlc = 0,
         .priority = 128
     };
