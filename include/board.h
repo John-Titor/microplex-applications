@@ -61,6 +61,11 @@
 # define debug(fmt, args...)    do { } while(0)
 #endif
 
+//////////////////////////////////////////////////////////////////////
+// magic debug bytes
+//
+volatile uint16_t __at (0x80) _post_code;
+#define POST(_x)    _post_code = _x
 
 #ifdef BOARD_MICROPLEX_7X
 #include "Microplex_7X.h"

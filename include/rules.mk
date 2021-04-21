@@ -46,7 +46,7 @@ CFLAGS		+=	-DBOARD_$(BOARD) \
 
 LDFLAGS		 =	--code-loc 0x2200 \
 			--code-size 0x8d80 \
-			--data-loc 0x0080 \
+			--data-loc 0x0082 \
 			--xram-loc 0x0100 \
 			--xram-size 0x0f80 \
 			--out-fmt-s19

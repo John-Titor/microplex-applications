@@ -77,6 +77,8 @@ main()
     //CAN_init(CAN_BR_500, CAN_FM_4x16, &can_filters);
     CAN_init(CAN_BR_125, CAN_FM_4x16, &can_filters);
     LOG("E36 tail module");
+    printf("POST %02x\n", _post_code);
+    POST(1);
     if (SRS & (1<<7)) puts("POR");
     if (SRS & (1<<6)) puts("PIN");
     if (SRS & (1<<5)) puts("COP");
