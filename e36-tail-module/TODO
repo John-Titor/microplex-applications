@@ -31,7 +31,8 @@ CAN:
   ✔ send standard frame @done (21-04-20 11:59)
   ✔ send extended frame @done (21-04-20 11:59)
   ✔ receive standard frame and match ID @done (21-04-20 11:59)
-  ☐ filter specific message IDs
+  ✔ filter specific message IDs @done (21-04-20 20:01)
+  ☐ 500kbps
 
 Outputs:
   ✔ switch on/off as commanded @done (21-04-20 17:25)

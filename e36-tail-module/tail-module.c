@@ -52,13 +52,13 @@ static const CAN_filters can_filters = {
             (uint16_t)0x0a8 << 5,
             (uint16_t)0x21a << 5,
             (uint16_t)0x6f1 << 5,
-            (uint16_t)0x0001
+            (uint16_t)0x0000
         },
         .mask = {
-            0xffff,     // allow anything
-            0xffff,
-            0xffff,
-            0xffff
+            ~((uint16_t)0x7ff << 5),     // precise match
+            ~((uint16_t)0x7ff << 5),     // precise match
+            ~((uint16_t)0x7ff << 5),     // precise match
+            0
         },
     }
 };
