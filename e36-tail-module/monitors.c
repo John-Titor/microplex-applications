@@ -9,11 +9,11 @@
 
 #include "defs.h"
 
-// Table here must monitor_channel_t
+// Table entries here must correspond to monitor_channel_t values
 static
 adc_channel_state_t adc_cfg[] = {
     // fast-polled channels
-    // XXX 70us channel * 9 channels = ~650us, need to be careful not to
+    // XXX 70us channel * 11 channels = ~770us, need to be careful not to
     //     run over the 1000us max callout time - maybe split this into
     //     two groups.
     { .channel = AI_KL15, .scale_factor = ADC_SCALE_FACTOR_KL15 },

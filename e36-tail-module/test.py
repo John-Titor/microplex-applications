@@ -318,18 +318,30 @@ class ModuleState(object):
 
     def update(self, msg):
         self.message_rx_count += 1
+        self._can_in_timeout = False
         try:
             self.status_system = MSG_status_system(msg)
+            return
         except MessageError:
-            try:
-                self.status_v_i = MSG_status_voltage_current(msg)
-            except MessageError:
-                try:
-                    self.status_faults = MSG_status_faults(msg)
-                except MessageError:
-                    self.message_errors += 1
-                    self._logger.log(f"CAN? {msg}")
-        self._can_in_timeout = False
+            pass
+        try:
+            self.status_v_i = MSG_status_voltage_current(msg)
+            return
+        except MessageError:
+            pass
+        try:
+            self.status_faults = MSG_status_faults(msg)
+            return
+        except MessageError:
+            pass
+        try:
+            ack = MSG_ack(msg)
+            self.module_resets += 1
+            return
+        except MessageError:
+            pass
+        self.message_errors += 1
+        self._logger.log(f"CAN? {msg}")
 
     def timeout(self):
         self._can_in_timeout = True

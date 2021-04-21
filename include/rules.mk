@@ -40,7 +40,7 @@ endif
 #
 CFLAGS		+=	-DBOARD_$(BOARD) \
 			--stack-loc 0x107f \
-			--std-sdcc11 \
+			--std-sdcc2x \
 			$(addprefix -D,$(DEFINES)) \
 			$(if $(RELEASE),-DNDEBUG -DRELEASE,)
 

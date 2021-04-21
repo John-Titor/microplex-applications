@@ -105,8 +105,8 @@ can_report_diags(struct pt *pt)
     timer_register(&can_report_diags_timer);
 
     for (;;) {
-        pt_wait(pt, timer_expired(can_report_diags_timer));
-
+        pt_delay(pt, can_report_diags_timer, CAN_REPORT_INTERVAL_DIAGS);
+        
 #if (CAN_REPORT_INTERVAL_DIAGS > 0)
         uint16_t mon_val;
 
@@ -171,8 +171,6 @@ can_report_diags(struct pt *pt)
         CAN_send_blocking(&msg_buf);
         pt_yield(pt);
 #endif // (CAN_REPORT_INTERVAL_DIAGS > 0)
-
-        timer_reset(can_report_diags_timer, CAN_REPORT_INTERVAL_DIAGS);
     }
     pt_end(pt);
 }
