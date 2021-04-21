@@ -58,7 +58,9 @@ extern struct pt pt_tails;
 
 typedef enum {
     LIGHT_OFF,
-    LIGHT_ON
+    LIGHT_ON,
+    LIGHT_FAULT,
+    _LIGHT_STATE_MAX
 } light_state_t;
 
 extern light_state_t brake_light_requested;

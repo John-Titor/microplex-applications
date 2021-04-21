@@ -23,8 +23,9 @@ can_listen(struct pt *pt)
         // check for a CAN message
         if (CAN_recv(&msg_buf)) {
 
-            // we're hearing CAN, so reset the idle timer
+            // we're hearing CAN, so reset the idle timer / fault
             timer_reset(can_idle_timer, CAN_IDLE_TIMEOUT);
+            fault_clear_system(SYS_FAULT_CAN_TIMEOUT);
             can_rx_count++;
 
 
@@ -50,9 +51,7 @@ can_listen(struct pt *pt)
         // if we haven't heard a useful CAN message for a while...
         if (timer_expired(can_idle_timer)) {
             fault_set_system(SYS_FAULT_CAN_TIMEOUT);
-            timer_reset(can_idle_timer, CAN_IDLE_TIMEOUT);
-
-            // XXX add 'limp' mode behaviour here
+            brake_light_request(LIGHT_FAULT);
         }
 
         pt_yield(pt);

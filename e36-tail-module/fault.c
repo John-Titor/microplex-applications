@@ -17,17 +17,17 @@ void
 fault_set_output(output_id_t id, output_fault_t fault)
 {
     assert(id < _OUTPUT_ID_MAX);
-    assert(fault < 8);
+    assert(fault < _OUT_FAULT_MAX);
 
-    fault_output[id].fields.current |= 1 << fault;
-    fault_output[id].fields.latched |= 1 << fault;
+    fault_output[id].fields.current |= (1 << fault);
+    fault_output[id].fields.latched |= (1 << fault);
 }
 
 void
 fault_clear_output(output_id_t id, output_fault_t fault)
 {
     assert(id < _OUTPUT_ID_MAX);
-    assert(fault < 8);
+    assert(fault < _OUT_FAULT_MAX);
 
     fault_output[id].fields.current &= ~(1 << fault);
 }
@@ -35,16 +35,16 @@ fault_clear_output(output_id_t id, output_fault_t fault)
 void
 fault_set_system(system_fault_t fault)
 {
-    assert(fault < 8);
+    assert(fault < _SYS_FAULT_MAX);
 
-    fault_system.fields.current |= 1 <<  fault;
-    fault_system.fields.latched |= 1 <<  fault;
+    fault_system.fields.current |= (1 << fault);
+    fault_system.fields.latched |= (1 << fault);
 }
 
 void
 fault_clear_system(system_fault_t fault)
 {
-    assert(fault < 8);
+    assert(fault < _SYS_FAULT_MAX);
 
     fault_system.fields.current &= ~(1 <<  fault);
 }

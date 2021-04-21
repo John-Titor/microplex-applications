@@ -2,6 +2,8 @@
  * Light algorithms.
  */
 
+#include <assert.h>
+
 #include <pt.h>
 #include <timer.h>
 
@@ -14,21 +16,21 @@ light_state_t rain_light_requested;
 void
 brake_light_request(light_state_t state)
 {
+    assert(state < _LIGHT_STATE_MAX);
+
     // Requests are repeated regularly with the current
     // state; only do something if we see a different
     // state requested.
     //
     if (state != brake_light_requested) {
 
-        // If turning off, also reset the thread.
-        //
-        if (state == LIGHT_OFF) {
-            pt_reset(&pt_brakes);
-        }
-
         // Update new requested state.
         //
         brake_light_requested = state;
+
+        // Restart the thread.
+        //
+        pt_reset(&pt_brakes);
     }
 }
 
@@ -47,49 +49,65 @@ brake_thread(struct pt *pt)
         timer_register(&brake_reset_timer);
     }
 
+    
     // Turn lights off
     //
-    output_request(OUTPUT_BRAKE_L, OUTPUT_STATE_OFF);
-    output_request(OUTPUT_BRAKE_R, OUTPUT_STATE_OFF);
+    if (brake_light_requested == LIGHT_OFF) {
+        output_request(OUTPUT_BRAKE_L, OUTPUT_STATE_OFF);
+        output_request(OUTPUT_BRAKE_R, OUTPUT_STATE_OFF);
 
-    // Wait for light to be turned on.
-    //
-    // Set a timer to detect whether we've been off for
-    // more than 4s.
-    //
-    timer_reset(brake_reset_timer, 4000);
-    pt_wait(pt, brake_light_requested != LIGHT_OFF);
+        // Set a timer to detect whether we stay off for
+        // more than 4s.
+        //
+        timer_reset(brake_reset_timer, 4000);
+    }
 
     // If we have been off for > 4s, do the brake-on
     // animation.
     //
-    if (timer_expired(brake_reset_timer)) {
+    else if (brake_light_requested == LIGHT_ON) {
+        if (timer_expired(brake_reset_timer)) {
 
+            output_request(OUTPUT_BRAKE_L, OUTPUT_STATE_ON);
+            output_request(OUTPUT_BRAKE_R, OUTPUT_STATE_ON);
+            pt_delay(pt, brake_timer, 200);
+
+            output_request(OUTPUT_BRAKE_L, OUTPUT_STATE_OFF);
+            output_request(OUTPUT_BRAKE_R, OUTPUT_STATE_ON);
+            pt_delay(pt, brake_timer, 100);
+
+            output_request(OUTPUT_BRAKE_L, OUTPUT_STATE_ON);
+            output_request(OUTPUT_BRAKE_R, OUTPUT_STATE_OFF);
+            pt_delay(pt, brake_timer, 100);
+
+            output_request(OUTPUT_BRAKE_L, OUTPUT_STATE_OFF);
+            output_request(OUTPUT_BRAKE_R, OUTPUT_STATE_ON);
+            pt_delay(pt, brake_timer, 100);
+
+            output_request(OUTPUT_BRAKE_L, OUTPUT_STATE_ON);
+            output_request(OUTPUT_BRAKE_R, OUTPUT_STATE_OFF);
+            pt_delay(pt, brake_timer, 100);
+        }
+
+        // Lights stay on now until thread is reset.
+        //
         output_request(OUTPUT_BRAKE_L, OUTPUT_STATE_ON);
         output_request(OUTPUT_BRAKE_R, OUTPUT_STATE_ON);
-        pt_delay(pt, brake_timer, 200);
-
-        output_request(OUTPUT_BRAKE_L, OUTPUT_STATE_OFF);
-        output_request(OUTPUT_BRAKE_R, OUTPUT_STATE_ON);
-        pt_delay(pt, brake_timer, 100);
-
-        output_request(OUTPUT_BRAKE_L, OUTPUT_STATE_ON);
-        output_request(OUTPUT_BRAKE_R, OUTPUT_STATE_OFF);
-        pt_delay(pt, brake_timer, 100);
-
-        output_request(OUTPUT_BRAKE_L, OUTPUT_STATE_OFF);
-        output_request(OUTPUT_BRAKE_R, OUTPUT_STATE_ON);
-        pt_delay(pt, brake_timer, 100);
-
-        output_request(OUTPUT_BRAKE_L, OUTPUT_STATE_ON);
-        output_request(OUTPUT_BRAKE_R, OUTPUT_STATE_OFF);
-        pt_delay(pt, brake_timer, 100);
     }
 
-    // Lights stay on now until thread is reset.
+    // Lights alternate left/right while in fault state.
     //
-    output_request(OUTPUT_BRAKE_L, OUTPUT_STATE_ON);
-    output_request(OUTPUT_BRAKE_R, OUTPUT_STATE_ON);
+    else if (brake_light_requested == LIGHT_FAULT) {
+        for (;;) {
+            output_request(OUTPUT_BRAKE_L, OUTPUT_STATE_OFF);
+            output_request(OUTPUT_BRAKE_R, OUTPUT_STATE_ON);
+            pt_delay(pt, brake_timer, 400);
+
+            output_request(OUTPUT_BRAKE_L, OUTPUT_STATE_ON);
+            output_request(OUTPUT_BRAKE_R, OUTPUT_STATE_OFF);
+            pt_delay(pt, brake_timer, 400);
+        }
+    }
 
     pt_end(pt);
 }
@@ -98,6 +116,8 @@ brake_thread(struct pt *pt)
 void
 tail_light_request(light_state_t state)
 {
+    assert(state < LIGHT_FAULT);
+
     // If we are not in rain light mode, and this is a change
     // of state for the tail lights, update the requested state
     // and reset the thread to make it so.
@@ -113,6 +133,8 @@ tail_light_request(light_state_t state)
 void
 rain_light_request(light_state_t state)
 {
+    assert(state < LIGHT_FAULT);
+
     // If this is a change of state for the rain lights, update
     // the requested state and reset the thread to make it so.
     //

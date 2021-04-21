@@ -494,9 +494,9 @@ class Fault(DispObj):
         try:
             val = self.property
             if val & (1 << self._field):
-                return 'active'
+                return 'current'
             if val & (1 << (self._field + 4)):
-                return 'saved'
+                return 'latched'
         except Exception:
             pass
         return 'none'
@@ -504,9 +504,9 @@ class Fault(DispObj):
     @property
     def attr(self):
         state = self._state
-        if state == 'active':
+        if state == 'current':
             return curses.color_pair(RED)
-        elif state == 'saved':
+        elif state == 'latched':
             return curses.color_pair(CYAN)
         return curses.A_DIM
 
@@ -602,24 +602,29 @@ class MonitorState(object):
 #
 def do_monitor(stdscr, interface, args):
 
+    # look for a device
     module_id = interface.detect()
 
-    monitor_state = MonitorState()
+    # monitor initialization
     tx_phase = True
     tx_time = time.time()
 
+    monitor_state = MonitorState()
+    if not args.no_CAN_at_start:
+        monitor_state.sw_can = True
+
+    # curses init
     curses.curs_set(False)
     curses.start_color()
     stdscr.nodelay(True)
     stdscr.clear()
     stdscr.refresh()
-
     curses.init_pair(RED, curses.COLOR_RED, curses.COLOR_BLACK)
     curses.init_pair(GREEN, curses.COLOR_GREEN, curses.COLOR_BLACK)
     curses.init_pair(CYAN, curses.COLOR_CYAN, curses.COLOR_BLACK)
 
+    # lay out the status window
     statwin = curses.newwin(19, 80, 0, 0)
-
     statwin.addstr(1, 1, '-- Monitor Status -------------------------------------')
     statwin.addstr(2, 1, 'Resets:           Messages Recvd:')
     statwin.addstr(3, 1, 'Faults:           Message Errors:')
@@ -639,17 +644,20 @@ def do_monitor(stdscr, interface, args):
     statwin.addstr(17, 1, '[Q]uit')
     statwin.refresh()
 
+    # initialize the logger window
     maxy, maxx = stdscr.getmaxyx()
     logwin = curses.newwin(maxy - 18, maxx, 19, 0)
     logger = Logger(logwin, args)
 
+    # create the module state tracker
     module_state = ModuleState(statwin, logger)
 
+    # create display widgets
     widgets = [
         Count(statwin, 2, 10, module_state, 'module_resets'),
         Count(statwin, 2, 35, module_state, 'message_rx_count'),
         Count(statwin, 3, 35, module_state, 'message_errors'),
-        #Fault(statwin, 3, 9, monitor_state, 'monitor_faults', 0, 'CAN')
+        # Fault(statwin, 3, 9, monitor_state, 'monitor_faults', 0, 'CAN')
 
         Millivolts(statwin, 6, 5, module_state, 't15_voltage'),
         Temperature(statwin, 6, 19, module_state, 'temperature'),
@@ -677,6 +685,7 @@ def do_monitor(stdscr, interface, args):
             Fault(statwin, 11 + channel, 54, module_state, 'output_faults', 2, "OVERLOAD", channel),
         ]
 
+    # run the monitor loop
     while True:
         statwin.refresh()
         msg = interface.recv(0.1)
@@ -739,19 +748,17 @@ parser.add_argument('--can-speed',
                     default=125000,
                     metavar='BITRATE',
                     help='CAN bitrate')
+parser.add_argument('--no-CAN-at-start',
+                    action='store_true',
+                    help='disable vehicle CAN emulation at start')
 parser.add_argument('--verbose',
                     action='store_true',
                     help='print verbose progress information')
-actiongroup = parser.add_mutually_exclusive_group(required=True)
-actiongroup.add_argument('--monitor',
-                         action='store_true',
-                         help='monitor operation')
 
 args = parser.parse_args()
 try:
     interface = CANInterface(args)
-    if args.monitor:
-        curses.wrapper(do_monitor, interface, args)
+    curses.wrapper(do_monitor, interface, args)
 except KeyboardInterrupt:
     pass
 if interface is not None:

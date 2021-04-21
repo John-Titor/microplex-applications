@@ -5,7 +5,7 @@ Functional requirements:
   ☐ report status, temperature, T30 voltage via CAN (for diagnostics)
   ☐ emulate the E90 JBE / CAS sufficient for Protools / XHP
   ☐ power-up on T15, power-down when off
-  ☐ on CAN timeout, blink left/right slowly
+  ✔ on CAN timeout, blink left/right slowly @done (21-04-20 19:28)
   ✔ brake lights blink quickly when activated (and have been off for > 4s) @done (21-04-13 20:05)
 
 Assembly requirements:
@@ -45,10 +45,10 @@ Brake lights:
   two circuits for redundancy / patterns
   ✔ off when commanded off @done (21-04-13 20:05)
   ✔ report whether on / off via CAN @done (21-04-20 14:03)
-  ☐ turn-on sequence when commanded on
+  ✔ turn-on sequence when commanded on @done (21-04-20 19:28)
     rapid alternation between circuits 1 & 2 for ~1s max
     only if have been off for > 4s
-  ☐ blink slowly left/right on CAN timeout
+  ✔ blink slowly left/right on CAN timeout @done (21-04-20 19:27)
 
 Tail lights:
   msgid 0x21a - http://www.loopybunny.co.uk/CarPC/can/21A.html
@@ -73,6 +73,9 @@ Fuel level:
 Faults:
   ✔ two copies of each fault; "current" and "stored" @done (21-02-13 17:55)
   ✔ report via CAN @done (21-02-13 17:55)
+  ☐ T15 plausibility
+  ☐ over-temperature
+  ✔ CAN timeout @done (21-04-20 19:02)
 
 CAN output:
   ✔ status message 1 @done (21-04-20 17:27)

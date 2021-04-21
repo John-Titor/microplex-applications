@@ -5,7 +5,7 @@
 /* 
  * Timeout (ms) before deciding that CAN has been disconnected.
  */
-#define CAN_IDLE_TIMEOUT            500
+#define CAN_IDLE_TIMEOUT            2000
 
 /* 
  * Interval (ms) between fuel level reports
