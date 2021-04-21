@@ -28,7 +28,6 @@ adc_channel_state_t adc_cfg[] = {
 
     // slow-polled channels
     { .channel = AI_1,    .scale_factor = ADC_SCALE_FACTOR_10V  },
-    { .channel = AI_3,    .scale_factor = ADC_SCALE_FACTOR_30V  },
     { .channel = AI_TEMP, .scale_factor = ADC_SCALE_FACTOR_TEMP },
 };
 static const uint8_t num_adc_fast_cfg = 9;

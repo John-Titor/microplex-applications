@@ -18,10 +18,10 @@
 static output_state_t   output_state[_OUTPUT_ID_MAX];
 uint8_t                 output_state_requested;
 
-static uint16_t output_voltage(uint8_t output);
-static uint16_t output_current(uint8_t output);
-static void     output_control(uint8_t output, bool on);
-static void     output_check(uint8_t output);
+static uint16_t output_voltage(output_id_t output);
+static uint16_t output_current(output_id_t output);
+static void     output_control(output_id_t output, bool on);
+static void     output_check(output_id_t output);
 
 void
 output_thread(struct pt *pt)
@@ -52,7 +52,7 @@ output_thread(struct pt *pt)
  * Client request for output on/off.
  */
 void
-output_request(uint8_t output, output_state_t state)
+output_request(output_id_t output, output_state_t state)
 {
     assert(output < _OUTPUT_ID_MAX);
 
@@ -76,38 +76,30 @@ output_request(uint8_t output, output_state_t state)
 }
 
 static uint16_t
-output_voltage(uint8_t output)
+output_voltage(output_id_t output)
 {
-    switch (output) {
-    case 0: return monitor_get(MON_OUT_V_1);
-    case 1: return monitor_get(MON_OUT_V_2);
-    case 2: return monitor_get(MON_OUT_V_3);
-    case 3: return monitor_get(MON_OUT_V_4);
-    default: assert(false); return (0);
-    }
+    assert(output < _OUTPUT_ID_MAX);
+
+    return monitor_get(MON_OUT_V_1 + output);
 }
 
 static uint16_t
-output_current(uint8_t output)
+output_current(output_id_t output)
 {
-    switch (output) {
-    case 0: return monitor_get(MON_OUT_I_1);
-    case 1: return monitor_get(MON_OUT_I_2);
-    case 2: return monitor_get(MON_OUT_I_3);
-    case 3: return monitor_get(MON_OUT_I_4);
-    default: assert(false); return (0);
-    }
+    assert(output < _OUTPUT_ID_MAX);
+
+    return monitor_get(MON_OUT_I_1 + output);
 }
 
 static void
-output_control(uint8_t output, bool on)
+output_control(output_id_t output, bool on)
 {
+    assert(output < _OUTPUT_ID_MAX);
     switch (output) {
     case 0: set_DO_HSD_1(on); break;
     case 1: set_DO_HSD_2(on); break;
     case 2: set_DO_HSD_3(on); break;
     case 3: set_DO_HSD_4(on); break;
-    default: assert(false);
     }
 }
 
@@ -122,7 +114,7 @@ output_control(uint8_t output, bool on)
 //
 
 static void
-output_check(uint8_t output)
+output_check(output_id_t output)
 {
     const uint16_t output_mV = output_voltage(output);
     const uint16_t output_mA = output_current(output);

@@ -89,7 +89,6 @@ typedef enum {
 
     // Slow-sampled channels.
     MON_FUEL_LEVEL,
-    MON_T30_VOLTAGE,
     MON_TEMPERATURE,
     _MON_ID_MAX
 } monitor_channel_t;
@@ -150,7 +149,6 @@ typedef enum {
 } output_fault_t;
 
 typedef enum {
-    SYS_FAULT_T30_PLAUSIBILITY,
     SYS_FAULT_T15_PLAUSIBILITY,
     SYS_FAULT_CAN_TIMEOUT,
     SYS_FAULT_OVER_TEMPERATURE,

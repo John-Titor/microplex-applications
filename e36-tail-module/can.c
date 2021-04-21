@@ -113,12 +113,11 @@ can_report_diags(struct pt *pt)
 
         msg_buf.id.mscan_id = MSCAN_ID_EXT(0x0f00000);
         msg_buf.dlc = 8;
-        mon_val = monitor_get(MON_T30_VOLTAGE);
-        msg_buf.data[0] = mon_val & 0xff;
-        msg_buf.data[1] = mon_val >> 8;
+        msg_buf.data[0] = 0;
+        msg_buf.data[1] = 0;
         mon_val = monitor_get(MON_T15_VOLTAGE);
-        msg_buf.data[2] = mon_val & 0xff;
-        msg_buf.data[3] = mon_val >> 8;
+        msg_buf.data[2] = mon_val >> 8;
+        msg_buf.data[3] = mon_val & 0xff;
         mon_val = monitor_get(MON_TEMPERATURE);
         if (mon_val < 1396) {
             // not interesting

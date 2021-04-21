@@ -16,9 +16,9 @@ Assembly requirements:
     4: CANL
     5: CANH
     6: T15 (TBD)
-    7: T30
+    7: NC
     8: NC
-    9: T15 out (TBD)
+    9: NC (rain light?)
     10: tail/rain lights
     11: brake lights 1
     12: brake lights 2
@@ -34,11 +34,11 @@ CAN:
   ☐ filter specific message IDs
 
 Outputs:
-  ☐ switch on/off as commanded
+  ✔ switch on/off as commanded @done (21-04-20 17:25)
   ☐ detect over-current conditions
   ☐ detect open-circuit conditions
-  ☐ report output voltage
-  ☐ report output current
+  ✔ report output voltage @done (21-04-20 17:26)
+  ✔ report output current @done (21-04-20 17:26)
 
 Brake lights:
   msgid 0xa8 - http://www.loopybunny.co.uk/CarPC/can/0A8.html
@@ -57,7 +57,7 @@ Tail lights:
   ✔ on steady for tail light @done (21-04-13 20:06)
   ✔ blink 2Hz for rain light @done (21-04-13 20:06)
   ✔ rain has priority over tail @done (21-04-13 20:06)
-  ☐ report whether on/off via CAN
+  ✔ report whether on/off via CAN @done (21-04-20 17:26)
 
 Rain light:
   one circuit only, implementation TBD
@@ -67,26 +67,27 @@ Fuel level:
     msgid 0x349 - http://www.loopybunny.co.uk/CarPC/can/349.html
     full is 0x8000 per side
   ✔ send at 2Hz @done (21-04-19 13:05)
-  ☐ tracks 0.5-4.5V input
+  ✔ tracks 0.5-4.5V input @done (21-04-20 17:26)
+  ☐ check 0-5V mapping to %
 
 Faults:
   ✔ two copies of each fault; "current" and "stored" @done (21-02-13 17:55)
   ✔ report via CAN @done (21-02-13 17:55)
 
 CAN output:
-  ☐ status message 1
+  ✔ status message 1 @done (21-04-20 17:27)
     msgid 0x0f00000
-    - T30 voltage
-    - T15 voltage
-    - temperature
-    - fuel level
+    ✘ T30 voltage @cancelled (21-04-20 17:32)
+    ☐ T15 voltage
+    ☐ temperature
+    ✔ fuel level @done (21-04-20 17:27)
 
-  ☐ status message 2
+  ✔ status message 2 @done (21-04-20 17:27)
     msgid 0x0f00001
     - output current
     - output voltage
 
-  ☐ fault message
+  ✔ fault message @done (21-04-20 17:27)
     msgid 0x0f00010
     - output faults, current & saved
     - system faults, current & saved
@@ -98,10 +99,16 @@ E90 CAS / JBE emulation:
 Test harness:
   ✔ log console messages @done (21-04-18 19:58)
   ✔ log CAN messages in verbose mode @done (21-04-18 19:58)
-  ☐ decode internal status messages
+  ✔ decode internal status messages @done (21-04-20 17:27)
   ✔ send brake status messages @done (21-04-20 12:17)
   ✔ send light status messages @done (21-04-20 12:17)
   ✔ control T15 @done (21-04-18 19:58)
 
 Issues:
   ✔ non-extended-id CAN frames not received by test harness @done (21-04-20 12:17)
+  ☐ open fault not clearing when output switched off (should it? maybe on T15 off?)
+  ☐ stuck fault set on turn-off
+  ☐ T15 voltage reading low
+  ☐ rain light not turning on
+  ☐ module temperature stuck at zero
+

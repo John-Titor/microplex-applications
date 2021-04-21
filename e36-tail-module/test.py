@@ -11,7 +11,6 @@
 # - DO_3 open
 # - DO_4 open
 # - AI_1 some value 0-5V
-# - AI_3 T30
 # - KL15 on relay
 
 import argparse
@@ -184,7 +183,7 @@ class MSG_ack(RXMessage):
 class MSG_status_system(RXMessage):
     """firmware system status message"""
     _format = ">HHBBBB"
-    _filter = [(False, 0),
+    _filter = [(True, 0),
                (False, 0),
                (False, 0),
                (False, 0),
@@ -194,11 +193,12 @@ class MSG_status_system(RXMessage):
     def __init__(self, raw):
         super().__init__(expected_id=0x0f00000,
                          raw=raw)
-        (self.t30_voltage,
+        (_,
          self.t15_voltage,
          self.temperature,
          self.fuel_level,
-         self.output_request, _) = self._values
+         self.output_request,
+         self.function_request) = self._values
 
 
 class MSG_status_voltage_current(RXMessage):
@@ -339,70 +339,205 @@ class ModuleState(object):
     def module_reset(self):
         self.module_resets += 1
 
-    def _text_attr(self, text, val, index):
-        if val & (0x01 << index):
-            return (text, curses.color_pair(RED))
-        if val & (0x10 << index):
-            return (text, curses.color_pair(CYAN))
-        return ('-' * len(text), curses.A_DIM)
-
-    def print_attr(self, y, x, attr, len=8, index=None):
-        for obj in [self, self.status_system, self.status_v_i, self.status_faults]:
-            val = None
+    def __getattr__(self, attrName):
+        for obj in [self.status_system, self.status_v_i, self.status_faults]:
             try:
-                val = getattr(obj, attr)
-                break
-            except AttributeError as e:
+                return getattr(obj, attrName)
+            except AttributeError:
                 pass
-        if val is None:
-            self._win.addstr(y, x, 'X', curses.color_pair(RED))
-            return
+        raise AttributeError
 
-        elif attr in ['t30_voltage', 't15_voltage']:
-            self._win.addstr(y, x, f' {val / 1000.0:2.3f}', curses.A_BOLD)
 
-        elif attr == 'temperature':
-            self._win.addstr(y, x, f'{val:3}', curses.A_BOLD)
+class DispObj(object):
+    def __init__(self, win, y, x, source, propname, index=None):
+        self._win = win
+        self._y = y
+        self._x = x
+        self._source = source
+        self._propname = propname
+        self._index = index
 
-        elif attr == 'fuel_level':
-            self._win.addstr(y, x, f'{val:3}', curses.A_BOLD)
+    @property
+    def attr(self):
+        try:
+            val = self.value
+            return curses.A_BOLD
+        except Exception:
+            return curses.A_DIM
 
-        elif attr == 'output_request':
-            if val & (1 << index):
-                self._win.addstr(y, x, 'ON ', curses.color_pair(GREEN))
-            else:
-                self._win.addstr(y, x, 'OFF', curses.A_BOLD)
+    @property
+    def property(self):
+        val = getattr(self._source, self._propname)
+        if self._index is not None:
+            val = val[self._index]
+        return val
 
-        elif attr == 'output_voltage':
-            self._win.addstr(y, x, f'{val[index] / 1000.0:2.3f}', curses.A_BOLD)
+    def draw(self):
+        self._win.addstr(self._y, self._x, self.value, self.attr)
 
-        elif attr == 'output_current':
-            self._win.addstr(y, x, f'{val[index] / 1000.0:2.3f}', curses.A_BOLD)
 
-        elif attr == 'output_faults':
-            self._win.addstr(y, x, *self._text_attr('OPEN', val[index], index))
-            self._win.addstr(y, x + 5, *self._text_attr('STUCK', val[index], index))
-            self._win.addstr(y, x + 11, *self._text_attr('OVERLOAD', val[index], index))
+class MilliUnit(DispObj):
+    def __init__(self, win, y, x, source, propname, index, suffix):
+        super().__init__(win, y, x, source, propname, index)
+        self._suffix = suffix
 
-        elif attr == 'system_faults':
-            self._win.addstr(y, x, *self._text_attr('T30', val, 0))
-            self._win.addstr(y, x + 4, *self._text_attr('T15', val, 1))
-            self._win.addstr(y, x + 8, *self._text_attr('CAN', val, 2))
-            self._win.addstr(y, x + 12, *self._text_attr('TEMP', val, 3))
+    @property
+    def value(self):
+        try:
+            return f"{self.property / 1000:>6.3f}{self._suffix}"
+        except Exception:
+            return f"--.---{self._suffix}"
 
-        elif attr == 'module_faults':
-            if self._can_in_timeout:
-                self._win.addstr(y, x, 'CAN', curses.color_pair(RED))
-            if self._can_did_timeout:
-                self._win.addstr(y, x, 'CAN', curses.color_pair(CYAN))
-            self._win.addstr(y, x, '---', curses.A_DIM)
 
-        elif attr in ['module_resets', 'message_errors', 'message_rx_count']:
-            color = curses.A_DIM if val == 0 else curses.color_pair(RED)
-            self._win.addstr(y, x, f'{val:{len}}', color)
+class CentiUnit(DispObj):
+    def __init__(self, win, y, x, source, propname, index, suffix):
+        super().__init__(win, y, x, source, propname, index)
+        self._suffix = suffix
 
-        else:
-            raise RuntimeError(f'cannot present \'{attr}\'')
+    @property
+    def value(self):
+        try:
+            return f"{self.property / 100:>5.2f}{self._suffix}"
+        except Exception:
+            return f"--.--{self._suffix}"
+
+
+class DeciUnit(DispObj):
+    def __init__(self, win, y, x, source, propname, index, suffix):
+        super().__init__(win, y, x, source, propname, index)
+        self._suffix = suffix
+
+    @property
+    def value(self):
+        try:
+            return f"{self.property / 10:>4.1f}{self._suffix}"
+        except Exception:
+            return f"--.-{self._suffix}"
+
+
+class Millivolts(MilliUnit):
+    def __init__(self, win, y, x, source, propname, index=None):
+        super().__init__(win, y, x, source, propname, index, "V")
+
+
+class DeciVolts(DeciUnit):
+    def __init__(self, win, y, x, source, propname, index=None):
+        super().__init__(win, y, x, source, propname, index, "V")
+
+
+class CentiAmps(CentiUnit):
+    def __init__(self, win, y, x, source, propname, index=None):
+        super().__init__(win, y, x, source, propname, index, "A")
+
+
+class ByteUnit(DispObj):
+    def __init__(self, win, y, x, source, propname, suffix):
+        super().__init__(win, y, x, source, propname)
+        self._suffix = suffix
+
+    @property
+    def value(self):
+        try:
+            return f"{self.property:3}{self._suffix}"
+        except Exception:
+            return f"---{self._suffix}"
+
+
+class Temperature(ByteUnit):
+    def __init__(self, win, y, x, source, propname):
+        super().__init__(win, y, x, source, propname, '°C')
+
+
+class Percentage(ByteUnit):
+    def __init__(self, win, y, x, source, propname):
+        super().__init__(win, y, x, source, propname, '%')
+
+
+class Count(DispObj):
+    def __init__(self, win, y, x, source, propname):
+        super().__init__(win, y, x, source, propname)
+
+    @property
+    def value(self):
+        return f"{self.property:5}"
+
+
+class OnOff(DispObj):
+    def __init__(self, win, y, x, source, propname, index=None):
+        super().__init__(win, y, x, source, propname, index)
+
+    @property
+    def attr(self):
+        try:
+            if self.property:
+                return curses.color_pair(GREEN)
+        except Exception:
+            pass
+        return curses.A_DIM
+
+    @property
+    def value(self):
+        try:
+            return "ON " if self.property else "OFF"
+        except Exception:
+            return "---"
+
+
+class Fault(DispObj):
+    def __init__(self, win, y, x, source, propname, field, label, index=None):
+        super().__init__(win, y, x, source, propname, index)
+        self._field = field
+        self._label = label
+
+    @property
+    def _state(self):
+        try:
+            val = self.property
+            if val & (1 << self._field):
+                return 'active'
+            if val & (1 << (self._field + 4)):
+                return 'saved'
+        except Exception:
+            pass
+        return 'none'
+
+    @property
+    def attr(self):
+        state = self._state
+        if state == 'active':
+            return curses.color_pair(RED)
+        elif state == 'saved':
+            return curses.color_pair(CYAN)
+        return curses.A_DIM
+
+    @property
+    def value(self):
+        return "-" * len(self._label) if self._state == 'none' else self._label
+
+
+class Flag(DispObj):
+    def __init__(self, win, y, x, source, propname, field, label):
+        super().__init__(win, y, x, source, propname)
+        self._field = field
+        self._label = label
+
+    @property
+    def attr(self):
+        try:
+            if self.property & (1 << self._field):
+                return curses.color_pair(GREEN)
+        except Exception:
+            pass
+        return curses.A_DIM
+
+    @property
+    def value(self):
+        try:
+            if self.property & (1 << self._field):
+                return self._label
+        except Exception:
+            pass
+        return "-" * len(self._label)
 
 
 class Logger(object):
@@ -424,33 +559,43 @@ class Logger(object):
             raise KeyError
         for idx in range(0, msg.dlc):
             if msg.data[idx] == 0:
-                self.log(f"CONS: {self._cons_buf}")
+                self.log(f"CONS: {self._cons_buf}", curses.A_BOLD)
                 self._cons_buf = ""
             else:
                 self._cons_buf += chr(msg.data[idx])
 
-    def log(self, msg):
-        self._win.addstr(f"{msg}\n")
+    def log(self, msg, attr=curses.A_DIM):
+        self._win.addstr(f"{msg}\n", attr)
         self._win.refresh()
 
 
+class MonitorState(object):
+    def __init__(self):
+        self.sw_t15 = False
+        self.sw_brake = False
+        self.sw_lights = False
+        self.sw_rain = False
+        self.sw_can = False
+
 # Live monitoring mode for testing, etc.
 #
-# Monitor Status ----------------------------------------------
-# Resets: xxx
-# Faults: CAN
+# -- Monitor Status -------------------------------------
+# Resets:        0  Messages Recvd:        6
+# Faults: X         Message Errors:        0
 #
-# Module Status -----------------------------------------------
-# T30 [  x.xxxV]  T15 [  x.xxxV]  Temp [    xx°C]   CAN
-# Faults: T30 T15 CAN TEMP
+# -- Module Status --------------------------------------
+# T15 0.000V  Temp   0°C  Fuel: 000%
+# Status: Brake Light Rain
+# Faults: T15 CAN TEMP
 #
 # Output    Status  Voltage     Current     Faults
-#   0       ON      [  x.xxxV]  [  x.xxxA]  OPEN STUCK OVERLOAD
-#   1       --      [  x.xxxV]  [  x.xxxA]  OPEN STUCK OVERLOAD
-#   2       --      [  x.xxxV]  [  x.xxxA]  OPEN STUCK OVERLOAD
-#   3       --      [  x.xxxV]  [  x.xxxA]  OPEN STUCK OVERLOAD
+#    1       OFF    0.000V      0.000A      OPEN STUCK OVERLOAD
+#    2       OFF    0.000V      0.000A      OPEN STUCK OVERLOAD
+#    3       OFF    0.000V      0.000A      OPEN STUCK OVERLOAD
+#    4       OFF    0.000V      0.000A      OPEN STUCK OVERLOAD
 #
-# [T]15 OFF [B]rake OFF  [L]ights OFF  [R]ain light OFF  [Q]uit
+# [T]15 OFF  [B]rake OFF  [L]ights OFF  [R]ain OFF  [C]AN OFF
+# [Q]uit
 #
 # Fault text is red if the fault is current, cyan if saved,
 # dashed out otherwise.
@@ -459,11 +604,7 @@ def do_monitor(stdscr, interface, args):
 
     module_id = interface.detect()
 
-    sw_t15 = False
-    sw_brake = False
-    sw_lights = False
-    sw_rain = False
-    sw_can = False
+    monitor_state = MonitorState()
     tx_phase = True
     tx_time = time.time()
 
@@ -477,39 +618,64 @@ def do_monitor(stdscr, interface, args):
     curses.init_pair(GREEN, curses.COLOR_GREEN, curses.COLOR_BLACK)
     curses.init_pair(CYAN, curses.COLOR_CYAN, curses.COLOR_BLACK)
 
-    statwin = curses.newwin(18, 80, 0, 0)
+    statwin = curses.newwin(19, 80, 0, 0)
 
     statwin.addstr(1, 1, '-- Monitor Status -------------------------------------')
     statwin.addstr(2, 1, 'Resets:           Messages Recvd:')
     statwin.addstr(3, 1, 'Faults:           Message Errors:')
 
     statwin.addstr(5, 1, '-- Module Status --------------------------------------')
-    statwin.addstr(6, 1, 'T30      V  T15      V  Temp    °C')
-    statwin.addstr(7, 1, 'Faults:')
+    statwin.addstr(6, 1, 'T15          Temp        Fuel:    %')
+    statwin.addstr(7, 1, 'Status:')
+    statwin.addstr(8, 1, 'Faults:')
 
-    statwin.addstr(9, 1, 'Output    Status  Voltage     Current     Faults')
-    statwin.addstr(10, 4, '1                   V           A')
-    statwin.addstr(11, 4, '2                   V           A')
-    statwin.addstr(12, 4, '3                   V           A')
-    statwin.addstr(13, 4, '4                   V           A')
+    statwin.addstr(10, 1, 'Output    Status  Voltage     Current     Faults')
+    statwin.addstr(11, 4, '1')
+    statwin.addstr(12, 4, '2')
+    statwin.addstr(13, 4, '3')
+    statwin.addstr(14, 4, '4')
 
-    statwin.addstr(15, 1, '[T]15      [B]rake      [L]ights      [R]ain      [C]AN')
-    statwin.addstr(16, 1, '[Q]uit')
+    statwin.addstr(16, 1, '[T]15      [B]rake      [L]ights      [R]ain      [C]AN')
+    statwin.addstr(17, 1, '[Q]uit')
     statwin.refresh()
 
     maxy, maxx = stdscr.getmaxyx()
-    logwin = curses.newwin(maxy - 18, maxx, 18, 0)
+    logwin = curses.newwin(maxy - 18, maxx, 19, 0)
     logger = Logger(logwin, args)
 
-    state = ModuleState(statwin, logger)
+    module_state = ModuleState(statwin, logger)
 
-    def status_flag(x, flag):
-        if flag:
-            statwin.addstr(15, x, 'ON ', curses.color_pair(GREEN))
-        else:
-            statwin.addstr(15, x, 'OFF', curses.A_BOLD)
+    widgets = [
+        Count(statwin, 2, 10, module_state, 'module_resets'),
+        Count(statwin, 2, 35, module_state, 'message_rx_count'),
+        Count(statwin, 3, 35, module_state, 'message_errors'),
+        #Fault(statwin, 3, 9, monitor_state, 'monitor_faults', 0, 'CAN')
 
-    last_send_time = 0
+        Millivolts(statwin, 6, 5, module_state, 't15_voltage'),
+        Temperature(statwin, 6, 19, module_state, 'temperature'),
+        Percentage(statwin, 6, 32, module_state, 'fuel_level'),
+        Flag(statwin, 7, 9, module_state, 'function_request', 0, "Brake"),
+        Flag(statwin, 7, 15, module_state, 'function_request', 1, "Light"),
+        Flag(statwin, 7, 21, module_state, 'function_request', 2, "Tail"),
+        Fault(statwin, 8, 9, module_state, 'system_faults', 0, "T15"),
+        Fault(statwin, 8, 13, module_state, 'system_faults', 1, "CAN"),
+        Fault(statwin, 8, 17, module_state, 'system_faults', 2, "TEMP"),
+
+        OnOff(statwin, 16, 7, monitor_state, 'sw_t15'),
+        OnOff(statwin, 16, 20, monitor_state, 'sw_brake'),
+        OnOff(statwin, 16, 34, monitor_state, 'sw_lights'),
+        OnOff(statwin, 16, 46, monitor_state, 'sw_rain'),
+        OnOff(statwin, 16, 57, monitor_state, 'sw_can'),
+    ]
+    for channel in range(0, 4):
+        widgets += [
+            Flag(statwin, 11 + channel, 12, module_state, 'output_request', channel, "ON"),
+            DeciVolts(statwin, 11 + channel, 19, module_state, 'output_voltage', channel),
+            CentiAmps(statwin, 11 + channel, 31, module_state, 'output_current', channel),
+            Fault(statwin, 11 + channel, 43, module_state, 'output_faults', 0, "OPEN", channel),
+            Fault(statwin, 11 + channel, 48, module_state, 'output_faults', 1, "STUCK", channel),
+            Fault(statwin, 11 + channel, 54, module_state, 'output_faults', 2, "OVERLOAD", channel),
+        ]
 
     while True:
         statwin.refresh()
@@ -519,34 +685,16 @@ def do_monitor(stdscr, interface, args):
                 logger.log_console(msg)
             except KeyError:
                 logger.log_can(msg)
-                state.update(msg)
+                module_state.update(msg)
 
-        state.print_attr(2, 9, 'module_resets')
-        state.print_attr(2, 35, 'message_rx_count')
-        state.print_attr(3, 35, 'message_errors')
-        state.print_attr(3, 9, 'module_faults')
+        for widget in widgets:
+            widget.draw()
 
-        state.print_attr(6, 4, 't30_voltage')
-        state.print_attr(6, 16, 't15_voltage')
-        state.print_attr(6, 30, 'temperature')
-
-        for channel in range(0, 4):
-            state.print_attr(10 + channel, 12, 'output_request', len=3, index=channel)
-            state.print_attr(10 + channel, 19, 'output_voltage', index=channel)
-            state.print_attr(10 + channel, 31, 'output_current', index=channel)
-            state.print_attr(10 + channel, 43, 'output_faults', len=19, index=channel)
-
-        status_flag(7, sw_t15)
-        status_flag(20, sw_brake)
-        status_flag(34, sw_lights)
-        status_flag(46, sw_rain)
-        status_flag(57, sw_can)
-
-        if sw_can and ((time.time() - tx_time) > 0.1):
+        if monitor_state.sw_can and ((time.time() - tx_time) > 0.1):
             if tx_phase:
-                msg = MSG_brake(sw_brake)
+                msg = MSG_brake(monitor_state.sw_brake)
             else:
-                msg = MSG_lights(False, sw_lights, sw_rain)
+                msg = MSG_lights(False, monitor_state.sw_lights, monitor_state.sw_rain)
                 # msg = MSG_lights(sw_brake, sw_lights, sw_rain)
             logger.log_can(msg)
             interface.send(msg)
@@ -556,19 +704,19 @@ def do_monitor(stdscr, interface, args):
         try:
             ch = stdscr.getkey()
             if ch == 't' or ch == 'T':
-                sw_t15 = not sw_t15
-                if sw_t15:
+                monitor_state.sw_t15 = not monitor_state.sw_t15
+                if monitor_state.sw_t15:
                     interface.set_power_t30_t15()
                 else:
                     interface.set_power_t30()
             if ch == 'b' or ch == 'B':
-                sw_brake = not sw_brake
+                monitor_state.sw_brake = not monitor_state.sw_brake
             if ch == 'l' or ch == 'L':
-                sw_lights = not sw_lights
+                monitor_state.sw_lights = not monitor_state.sw_lights
             if ch == 'r' or ch == 'R':
-                sw_rain = not sw_rain
+                monitor_state.sw_rain = not monitor_state.sw_rain
             if ch == 'c' or ch == 'C':
-                sw_can = not sw_can
+                monitor_state.sw_can = not monitor_state.sw_can
             if ch == 'q' or ch == 'Q':
                 return
         except Exception:

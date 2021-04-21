@@ -25,14 +25,7 @@ console_report(struct pt *pt)
 #if (CONSOLE_REPORT_INTERVAL > 0)
 //        uint16_t mon_val;
 
-        LOG("# %u rx %u",
-            count++,
-            can_rx_count);
-        pt_yield(pt);
-        LOG("# %c%c%c",
-            brake_light_requested ? 'B' : 'b',
-            tail_light_requested ? 'L' : 'l',
-            rain_light_requested ? 'R' : 'r');
+
 
 #endif // (CONSOLE_REPORT_INTERVAL > 0)
         timer_reset(console_report_timer, CONSOLE_REPORT_INTERVAL);
