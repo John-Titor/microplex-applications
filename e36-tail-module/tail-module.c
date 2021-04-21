@@ -77,6 +77,13 @@ main()
     //CAN_init(CAN_BR_500, CAN_FM_4x16, &can_filters);
     CAN_init(CAN_BR_125, CAN_FM_4x16, &can_filters);
     LOG("E36 tail module");
+    if (SRS & (1<<7)) puts("POR");
+    if (SRS & (1<<6)) puts("PIN");
+    if (SRS & (1<<5)) puts("COP");
+    if (SRS & (1<<4)) puts("ILOP");
+    if (SRS & (1<<3)) puts("ILAD");
+    if (SRS & (1<<2)) puts("LOC");
+    if (SRS & (1<<1)) puts("LVD");
 
     // start the timebase and timer callouts
     time_init();
