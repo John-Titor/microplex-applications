@@ -175,7 +175,7 @@ rain_light_request(light_state_t state)
     //
     if (rain_light_requested != state) {
         rain_light_requested = state;
-        pt_reset(&pt_tails);
+        pt_reset(&pt_rains);
     }
 }
 

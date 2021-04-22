@@ -107,7 +107,7 @@ class MSG_lights(TXMessageStd):
         super().__init__(LIGHT_CTRL_ID,
                          ((0x80 if brake_light else 0) |
                           (0x04 if tail_light else 0) |
-                          (0x01 if rain_light else 0)),
+                          (0x40 if rain_light else 0)),
                          0,
                          0xf7)
 
@@ -681,7 +681,7 @@ def do_monitor(stdscr, interface, args):
         Percentage(statwin, 6, 32, module_state, 'fuel_level'),
         Flag(statwin, 7, 9, module_state, 'function_request', 0, "Brake"),
         Flag(statwin, 7, 15, module_state, 'function_request', 1, "Light"),
-        Flag(statwin, 7, 21, module_state, 'function_request', 2, "Tail"),
+        Flag(statwin, 7, 21, module_state, 'function_request', 2, "Rain"),
         Fault(statwin, 8, 9, module_state, 'system_faults', 0, "T15"),
         Fault(statwin, 8, 13, module_state, 'system_faults', 1, "CAN"),
         Fault(statwin, 8, 17, module_state, 'system_faults', 2, "TEMP"),
