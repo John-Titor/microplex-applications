@@ -6,8 +6,6 @@
  * doing. Latched status is set once and never cleared.
  */
 
-#include <assert.h>
-
 #include "defs.h"
 
 fault_status_t  fault_output[_OUTPUT_ID_MAX];

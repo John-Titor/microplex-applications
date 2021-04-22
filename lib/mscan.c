@@ -3,13 +3,13 @@
  *
  */
 
-#include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
 #include <mc9s08dz60.h>
 #include <mscan.h>
+#include <debug.h>
 
 static const uint8_t btr_table[][2] = {
     { 0x04, 0x1c }, // 100kHz

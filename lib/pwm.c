@@ -17,7 +17,6 @@
  * or low) is converted to a steady state.
  */
 
-#include <assert.h>
 #include <stdlib.h>
 
 #include <mc9s08dz60.h>

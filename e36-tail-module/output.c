@@ -4,8 +4,6 @@
  * ref: VNQ5050AK-E datasheet
  */
 
-#include <assert.h>
-
 #include <board.h>
 #include <timer.h>
 

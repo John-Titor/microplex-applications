@@ -24,7 +24,6 @@
  * before sending the remaining message bytes.
  */
 
-#include <assert.h>
 #include <string.h>
 
 #include <timer.h>

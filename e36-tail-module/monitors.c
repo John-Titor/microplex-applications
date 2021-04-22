@@ -2,8 +2,6 @@
  * Input monitoring.
  */
 
-#include <assert.h>
-
 #include <adc.h>
 #include <timer.h>
 

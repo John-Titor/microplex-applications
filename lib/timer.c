@@ -16,10 +16,10 @@
  *
  */
 
-#include <assert.h>
 #include <stdlib.h>
 
 #include <timer.h>
+#include <debug.h>
 
 static timer_t      *timer_list;
 static timer_call_t *timer_call_list;

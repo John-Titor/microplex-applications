@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "debug.h"
 #include "mc9s08dz60.h"
 
 // XXX the resulting code is easy to read, but it could be more compact;
@@ -51,12 +52,6 @@
         _PT ## _port ## SE.Bits.PT ## _port ## SE ## _pin = _slow;  \
         _PT ## _port ## DS.Bits.PT ## _port ## DS ## _pin = _strong;\
     } struct hack
-
-//////////////////////////////////////////////////////////////////////
-// magic debug bytes
-//
-volatile uint16_t __at (0x107e) _post_code;
-#define POST(_x)    _post_code = _x
 
 #ifdef BOARD_MICROPLEX_7X
 #include "Microplex_7X.h"

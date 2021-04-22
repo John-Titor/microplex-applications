@@ -2,8 +2,6 @@
  * Light algorithms.
  */
 
-#include <assert.h>
-
 #include <pt.h>
 #include <timer.h>
 
