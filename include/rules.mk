@@ -39,16 +39,16 @@ endif
 # Common build options.
 #
 CFLAGS		+=	-DBOARD_$(BOARD) \
-			--stack-loc 0x107f \
+			--stack-loc 0x107d \
 			--std-sdcc2x \
 			$(addprefix -D,$(DEFINES)) \
 			$(if $(RELEASE),-DNDEBUG -DRELEASE,)
 
 LDFLAGS		 =	--code-loc 0x2200 \
 			--code-size 0x8d80 \
-			--data-loc 0x0082 \
+			--data-loc 0x0080 \
 			--xram-loc 0x0100 \
-			--xram-size 0x0f80 \
+			--xram-size 0x0f7e \
 			--out-fmt-s19
 
 #
