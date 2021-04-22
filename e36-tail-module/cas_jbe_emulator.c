@@ -195,15 +195,13 @@ cas_jbe_send_response(uint8_t respondent)
 {
     assert(response_state.residual > 0);
 
-    CAN_message_t rsp_buf;
-
     // othewise, send data
-    rsp_buf.id.mscan_id = MSCAN_ID(0x600 | respondent);
-    rsp_buf.dlc = 8;
+    msg_buf.id.mscan_id = MSCAN_ID(0x600 | respondent);
+    msg_buf.dlc = 8;
 
     // response header
-    rsp_buf.data[0] = 0x1a;     // expected requester ID
-    rsp_buf.data[1] = response_state.sequence++;
+    msg_buf.data[0] = 0x1a;     // expected requester ID
+    msg_buf.data[1] = response_state.sequence++;
     if (response_state.sequence == 0x11) {
         response_state.sequence = 0x21;
     }
@@ -211,12 +209,12 @@ cas_jbe_send_response(uint8_t respondent)
     // response data bytes, plus padding
     uint8_t index = 2;
     while ((index < 8) && (response_state.residual--)) {
-        rsp_buf.data[index++] = *response_state.bytes++;
+        msg_buf.data[index++] = *response_state.bytes++;
     }
     while (index < 8) {
-        rsp_buf.data[index++] = 0xff;
+        msg_buf.data[index++] = 0xff;
     }
-    CAN_send_blocking(&rsp_buf);
+    CAN_send_blocking(&msg_buf);
 }
 
 // Handle sending periodic Terminal Status messages
@@ -231,7 +229,6 @@ cas_jbe_send_terminal_status(void)
     if (timer_expired(terminal_status_timer)) {
         timer_reset(terminal_status_timer, 500);
 
-        CAN_message_t msg_buf;
         msg_buf.id.mscan_id = MSCAN_ID(0x130);
         msg_buf.dlc = 5;
         msg_buf.data[0] = 0xc5;
@@ -245,10 +242,10 @@ cas_jbe_send_terminal_status(void)
 
 // Handle receiving a new request
 void
-cas_jbe_recv(const CAN_message_t *msg)
+cas_jbe_recv()
 {
     // ignore messages not addressed to at least one of CAS or JBE
-    switch (msg->data[0]) {
+    switch (msg_buf.data[0]) {
     case ID_JBE:
     case ID_CAS:
     case ID_ALL:
@@ -263,20 +260,20 @@ cas_jbe_recv(const CAN_message_t *msg)
     // is talking at all at a time, so we never offer data from
     // more than one respondent at once.
     //
-    if ((msg->data[1] == 0x30) &&
-        (msg->data[2] == 0x00) &&
-        (msg->data[3] == 0x01) &&
-        (msg->data[4] == 0x00) &&
-        (msg->data[5] == 0x00) &&
-        (msg->data[6] == 0x00) &&
-        (msg->data[7] == 0x00)) {
+    if ((msg_buf.data[1] == 0x30) &&
+        (msg_buf.data[2] == 0x00) &&
+        (msg_buf.data[3] == 0x01) &&
+        (msg_buf.data[4] == 0x00) &&
+        (msg_buf.data[5] == 0x00) &&
+        (msg_buf.data[6] == 0x00) &&
+        (msg_buf.data[7] == 0x00)) {
 
         // send the remainder of the message
         response_continue = true;
 
         // sanity-check request length
-    } else if (msg->data[1] <= 6) {
-        memcpy(&req_buf, msg, sizeof(req_buf));
+    } else if (msg_buf.data[1] <= 6) {
+        memcpy(&req_buf, &msg_buf, sizeof(req_buf));
         pt_reset(&pt_cas_jbe_emulator);
         response_state.residual = 0;
     }

@@ -40,6 +40,7 @@ extern struct pt pt_can_report_fuel;
 extern struct pt pt_can_report_diags;
 
 extern unsigned can_rx_count;
+extern CAN_message_t msg_buf;
 
 extern void can_listen(struct pt *pt);
 extern void can_report_fuel(struct pt *pt);
@@ -47,7 +48,7 @@ extern void can_report_diags(struct pt *pt);
 
 extern struct pt pt_cas_jbe_emulator;
 
-extern void cas_jbe_recv(const CAN_message_t *msg);
+extern void cas_jbe_recv();
 extern void cas_jbe_emulator(struct pt *pt);
 
 

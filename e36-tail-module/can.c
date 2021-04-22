@@ -6,7 +6,7 @@
 
 #include "defs.h"
 
-static CAN_message_t msg_buf;
+CAN_message_t msg_buf;
 
 unsigned can_rx_count;
 
@@ -44,14 +44,14 @@ can_listen(struct pt *pt)
 
             // EDIABAS-style request
             else if (MSCAN_ID_MATCH(0x6f1, msg_buf) && (msg_buf.dlc == 8)) {
-                cas_jbe_recv(NULL);
+                cas_jbe_recv();
             }
         }
 
         // if we haven't heard a useful CAN message for a while...
         if (timer_expired(can_idle_timer)) {
             fault_set_system(SYS_FAULT_CAN_TIMEOUT);
-            brake_light_request(LIGHT_FAULT);
+            brake_light_request(LIGHT_ALT);
         }
 
         pt_yield(pt);
