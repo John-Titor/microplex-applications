@@ -130,7 +130,7 @@ can_report_diags(struct pt *pt)
         msg_buf.data[4] = mon_val;
         mon_val = monitor_get(MON_FUEL_LEVEL);
         msg_buf.data[5] = mon_val / 50; // scale 0-5000 -> %
-        msg_buf.data[6] = output_state_requested;
+        msg_buf.data[6] = output_pin_state;
         msg_buf.data[7] = ((brake_light_requested ? 1 : 0) | 
                            (tail_light_requested ? 2 : 0) |
                            (rain_light_requested ? 4 : 0));

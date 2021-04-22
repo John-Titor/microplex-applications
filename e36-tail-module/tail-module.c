@@ -35,9 +35,9 @@ struct pt pt_can_report_fuel;
 struct pt pt_can_report_diags;
 struct pt pt_console_report;
 struct pt pt_cas_jbe_emulator;
-struct pt pt_output_manager;
 struct pt pt_brakes;
 struct pt pt_tails;
+struct pt pt_output[_OUTPUT_ID_MAX];
 
 // Filters
 // 0x0a8 (DDE brake lights)
@@ -101,8 +101,10 @@ main()
         can_report_diags(&pt_can_report_diags);
         console_report(&pt_console_report);
         cas_jbe_emulator(&pt_cas_jbe_emulator);
-        output_thread(&pt_output_manager);
         brake_thread(&pt_brakes);
         tails_thread(&pt_tails);
+        for (output_id_t x = 0; x < _OUTPUT_ID_MAX; x++) {
+            output_thread(&pt_output[x], x);
+        }
     }
 }

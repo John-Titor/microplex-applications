@@ -37,7 +37,7 @@ CAN:
 Outputs:
   ✔ switch on/off as commanded @done (21-04-20 17:25)
   ☐ detect over-current conditions
-  ☐ detect open-circuit conditions
+  ✔ detect open-circuit conditions @done (21-04-21 20:16)
   ✔ report output voltage @done (21-04-20 17:26)
   ✔ report output current @done (21-04-20 17:26)
 
@@ -82,19 +82,19 @@ CAN output:
   ✔ status message 1 @done (21-04-20 17:27)
     msgid 0x0f00000
     ✘ T30 voltage @cancelled (21-04-20 17:32)
-    ☐ T15 voltage
+    ✔ T15 voltage @done (21-04-21 20:15)
     ☐ temperature
     ✔ fuel level @done (21-04-20 17:27)
 
   ✔ status message 2 @done (21-04-20 17:27)
     msgid 0x0f00001
     - output current
-    - output voltage
+    ✔ output voltage @done (21-04-21 20:15)
 
   ✔ fault message @done (21-04-20 17:27)
     msgid 0x0f00010
-    - output faults, current & saved
-    - system faults, current & saved
+    ✔ output faults, current & saved @done (21-04-21 20:15)
+    ✔ system faults, current & saved @done (21-04-21 20:15)
 
 E90 CAS / JBE emulation:
   ✔ generate 0x130 CAN messages with appropriate ignition status at 500ms intervals @done (21-04-20 12:17)
@@ -110,8 +110,8 @@ Test harness:
 
 Issues:
   ✔ non-extended-id CAN frames not received by test harness @done (21-04-20 12:17)
-  ☐ open fault not clearing when output switched off (should it? maybe on T15 off?)
-  ☐ stuck fault set on turn-off
+  ✔ open fault not clearing when output switched off (should it? maybe on T15 off?) @done (21-04-21 20:15)
+  ✔ stuck fault set on turn-off @done (21-04-21 20:16)
   ☐ T15 voltage reading low
   ☐ rain light not turning on
   ☐ module temperature stuck at zero

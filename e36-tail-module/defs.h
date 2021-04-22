@@ -15,6 +15,7 @@
 #include <mscan.h>
 #include <pt.h>
 
+
 /*
  * Console logging / debug thread.
  */
@@ -49,6 +50,7 @@ extern struct pt pt_cas_jbe_emulator;
 extern void cas_jbe_recv(const CAN_message_t *msg);
 extern void cas_jbe_emulator(struct pt *pt);
 
+
 /*
  * Various light behaviours.
  */
@@ -72,6 +74,7 @@ extern void tails_thread(struct pt *pt);
 extern void brake_light_request(light_state_t state);
 extern void tail_light_request(light_state_t state);
 extern void rain_light_request(light_state_t state);
+
 
 /*
  * Analog monitors.
@@ -98,43 +101,31 @@ typedef enum {
 extern void monitor_init(void);
 extern uint16_t monitor_get(monitor_channel_t channel);
 
+
 /*
  * High-side driver outputs.
  */
 
-extern struct pt pt_output_manager;
-extern uint8_t output_state_requested;
-
 typedef enum {
     OUTPUT_BRAKE_L,     // left brake
     OUTPUT_BRAKE_R,     // right brake
-    OUTPUT_TAILS,       // tail / rain lights
-    OUTPUT_T15,         // local T15
+    OUTPUT_TAILS,       // tail lights
+    OUTPUT_RAIN,        // rain light
     _OUTPUT_ID_MAX
 } output_id_t;
 
-/*
- * Output state.
- *
- * States < OUTPUT_STATE_ON are effectively 'off' states.
- */
 typedef enum {
-    OUTPUT_STATE_OFF            = 0x00,
-
-    OUTPUT_STATE_TIMEOUT        = 0x01,
-    OUTPUT_STATE_TIMEOUT_MAX    = 0x05,
-
-    OUTPUT_STATE_ON             = 0x10,
-
-    OUTPUT_STATE_OPEN           = 0x11,
-    OUTPUT_STATE_OPEN_TRIGGER   = 0x13,
-    OUTPUT_STATE_OPEN_MAX       = 0x14,
-
+    OUTPUT_STATE_OFF,
+    OUTPUT_STATE_ON,
     _OUTPUT_STATE_MAX
 } output_state_t;
 
-extern void output_thread(struct pt *pt);
-extern void output_request(uint8_t channel, output_state_t state);
+extern struct pt pt_output[_OUTPUT_ID_MAX];
+extern uint8_t output_pin_state;
+
+extern void output_thread(struct pt *pt, output_id_t output);
+extern void output_request(output_id_t output, output_state_t state); 
+
 
 /*
  * Faults.
