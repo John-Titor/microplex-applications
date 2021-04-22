@@ -19,17 +19,8 @@
 /*
  * Console logging / debug thread.
  */
-
-extern struct pt pt_console_report;
-
-extern void console_report(struct pt *pt);
-
-#ifdef CONSOLE_DO_LOG
-# define LOG(fmt, args...)  printf(fmt " \n", ## args)
-#else
-# define LOG(fmt, args...)  do {} while(0)
-#endif
-
+extern void putx8(uint8_t x);
+extern void putx16(uint16_t x);
 
 /*
  * CAN threads.

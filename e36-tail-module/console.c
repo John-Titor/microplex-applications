@@ -2,33 +2,31 @@
  * Console logging
  */
 
-#include <timer.h>
+#include <stdio.h>
 
 #include "defs.h"
 
-static unsigned count;
+static void
+putx4(uint8_t n)
+{
+    n &= 0xf;
+    if (n < 10) {
+        putchar('0' + n);
+    } else {
+        putchar('a' + (n - 10));
+    }
+}
 
 void
-console_report(struct pt *pt)
+putx8(uint8_t x)
 {
-    static volatile timer_t console_report_timer = {
-        .delay_ms = CONSOLE_REPORT_INTERVAL
-    };
-    static uint8_t live_counter;
+    putx4(x >> 4);
+    putx4(x >> 0);    
+}
 
-    pt_begin(pt);
-    timer_register(&console_report_timer);
-
-    for (;;) {
-        pt_wait(pt, timer_expired(console_report_timer));
-
-#if (CONSOLE_REPORT_INTERVAL > 0)
-//        uint16_t mon_val;
-
-
-
-#endif // (CONSOLE_REPORT_INTERVAL > 0)
-        timer_reset(console_report_timer, CONSOLE_REPORT_INTERVAL);
-    }
-    pt_end(pt);
+void
+putx16(uint16_t x)
+{
+    putx8(x >> 8);
+    putx8(x >> 0);
 }

@@ -25,11 +25,6 @@
 #define CONSOLE_REPORT_INTERVAL     1000
 
 /*
- * Log interesting things to the console.
- */
-#define CONSOLE_DO_LOG
-
-/*
  * Minimum load current (mA): below this, output is considered open.
  */
 #define SENSE_OPEN_CURRENT      50
