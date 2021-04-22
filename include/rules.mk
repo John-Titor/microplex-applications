@@ -46,10 +46,14 @@ CFLAGS		+=	-DBOARD_$(BOARD) \
 
 LDFLAGS		 =	--code-loc 0x2200 \
 			--code-size 0x8d80 \
-			--data-loc 0x0080 \
-			--xram-loc 0x0100 \
-			--xram-size 0x0f7e \
 			--out-fmt-s19
+
+# This is the default
+#			--data-loc 0x0080 \
+#
+# Without these, XSEG follows DSEG
+#			--xram-loc 0x0200 \
+#			--xram-size 0x0e7e \
 
 #
 # Paths.
