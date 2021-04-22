@@ -276,7 +276,7 @@ class CANInterface(object):
     def set_power_t30_t15(self):
         self.send(MSG_mjs_power(True, True))
 
-    def detect(self):
+    def detect(self, with_t15=False):
         """
         Power on the module and listen for it to sign on.
         Returns the ID of the detected module.
@@ -285,7 +285,10 @@ class CANInterface(object):
         while self.recv(0.25) is not None:
             # drain buffered messages
             pass
-        self.set_power_t30()
+        if with_t15:
+            self.set_power_t30_t15()
+        else:
+            self.set_power_t30()
         while True:
             rsp = self.recv(2)
             if rsp is None:
@@ -615,7 +618,7 @@ class MonitorState(object):
 def do_monitor(stdscr, interface, args):
 
     # look for a device
-    module_id = interface.detect()
+    module_id = interface.detect(args.T15_at_start)
 
     # monitor initialization
     tx_phase = True
@@ -624,6 +627,8 @@ def do_monitor(stdscr, interface, args):
     monitor_state = MonitorState()
     if not args.no_CAN_at_start:
         monitor_state.sw_can = True
+    if args.T15_at_start:
+        monitor_state.sw_t15 = True
 
     # curses init
     curses.curs_set(False)
@@ -763,6 +768,9 @@ parser.add_argument('--can-speed',
 parser.add_argument('--no-CAN-at-start',
                     action='store_true',
                     help='disable vehicle CAN emulation at start')
+parser.add_argument('--T15-at-start',
+                    action='store_true',
+                    help='turn on T15 with T30')
 parser.add_argument('--verbose',
                     action='store_true',
                     help='print verbose progress information')
