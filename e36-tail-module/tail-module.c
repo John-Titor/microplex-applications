@@ -94,6 +94,7 @@ main()
     // main loop
     for (;;) {
         __RESET_WATCHDOG();                 // must be reset every 1s or better
+        t15_check(&pt_t15_check);
         can_listen(&pt_can_listener);
         can_report_fuel(&pt_can_report_fuel);
         can_report_diags(&pt_can_report_diags);
@@ -105,4 +106,26 @@ main()
             output_thread(&pt_output[x], x);
         }
     }
+}
+
+void
+t15_check(struct pt *pt)
+{
+    (void)pt;
+    if (monitor_get(MON_T15_VOLTAGE) >= T15_MIN_VOLTAGE) {
+        return;
+    }
+    puts("LVT");
+
+    // low-voltage trap
+    while (monitor_get(MON_T15_VOLTAGE) < T15_MIN_VOLTAGE) {
+        // allow power-off if T15 falls low enough
+        set_DO_POWER(false);
+        set_CAN_STB_N(false);
+        __RESET_WATCHDOG();
+    }
+
+    // voltage has recovered, let the watchdog reset us
+    POST(0x8415);           // 'T'15
+    for (;;);
 }

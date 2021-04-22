@@ -59,3 +59,11 @@
  * Delay between retries for an overloaded output (ms).
  */
 #define SENSE_OVERLOAD_RETRY_INTERVAL   1000
+
+/*
+ * T15 brown-out voltage (mV).
+ * Below this voltage the unit will not function; it
+ * sits and waits for either the voltage to fall (so that it
+ * powers off), or recover (at which point it will reset).
+ */
+#define T15_MIN_VOLTAGE         6000
