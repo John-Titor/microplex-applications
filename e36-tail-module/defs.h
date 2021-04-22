@@ -49,11 +49,12 @@ extern void cas_jbe_emulator(struct pt *pt);
 
 extern struct pt pt_brakes;
 extern struct pt pt_tails;
+extern struct pt pt_rains;
 
 typedef enum {
     LIGHT_OFF,
     LIGHT_ON,
-    LIGHT_FAULT,
+    LIGHT_ALT,
     _LIGHT_STATE_MAX
 } light_state_t;
 
@@ -63,6 +64,7 @@ extern light_state_t rain_light_requested;
 
 extern void brake_thread(struct pt *pt);
 extern void tails_thread(struct pt *pt);
+extern void rains_thread(struct pt *pt);
 extern void brake_light_request(light_state_t state);
 extern void tail_light_request(light_state_t state);
 extern void rain_light_request(light_state_t state);
@@ -102,7 +104,7 @@ typedef enum {
     OUTPUT_BRAKE_L,     // left brake
     OUTPUT_BRAKE_R,     // right brake
     OUTPUT_TAILS,       // tail lights
-    OUTPUT_RAIN,        // rain light
+    OUTPUT_RAINS,       // rain light(s)
     _OUTPUT_ID_MAX
 } output_id_t;
 

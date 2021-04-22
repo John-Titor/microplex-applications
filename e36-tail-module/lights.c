@@ -97,7 +97,7 @@ brake_thread(struct pt *pt)
 
     // Lights alternate left/right while in fault state.
     //
-    else if (brake_light_requested == LIGHT_FAULT) {
+    else if (brake_light_requested == LIGHT_ALT) {
         for (;;) {
             output_request(OUTPUT_BRAKE_L, OUTPUT_STATE_OFF);
             output_request(OUTPUT_BRAKE_R, OUTPUT_STATE_ON);
@@ -116,30 +116,15 @@ brake_thread(struct pt *pt)
 void
 tail_light_request(light_state_t state)
 {
-    assert(state < LIGHT_FAULT);
+    assert(state < _LIGHT_STATE_MAX);
 
-    // If we are not in rain light mode, and this is a change
-    // of state for the tail lights, update the requested state
-    // and reset the thread to make it so.
+    // Requests are repeated regularly with the current
+    // state; only do something if we see a different
+    // state requested.
     //
-    if ((rain_light_requested != LIGHT_ON) &&
-        (tail_light_requested != state)) {
+    if ((tail_light_requested != state)) {
 
         tail_light_requested = state;
-        pt_reset(&pt_tails);
-    }
-}
-
-void
-rain_light_request(light_state_t state)
-{
-    assert(state < LIGHT_FAULT);
-
-    // If this is a change of state for the rain lights, update
-    // the requested state and reset the thread to make it so.
-    //
-    if (rain_light_requested != state) {
-        rain_light_requested = state;
         pt_reset(&pt_tails);
     }
 }
@@ -157,13 +142,17 @@ tails_thread(struct pt *pt)
         timer_register(&tails_timer);
     }
 
-    // If rain light requested, blink lights at 2Hz.
+    // Alt mode is short double blink every ~3s.
     //
-    while (rain_light_requested == LIGHT_ON) {
+    while (tail_light_requested == LIGHT_ALT) {
         output_request(OUTPUT_TAILS, OUTPUT_STATE_ON);
-        pt_delay(pt, tails_timer, 250);
+        pt_delay(pt, tails_timer, 150);
         output_request(OUTPUT_TAILS, OUTPUT_STATE_OFF);
-        pt_delay(pt, tails_timer, 250);
+        pt_delay(pt, tails_timer, 150);
+        output_request(OUTPUT_TAILS, OUTPUT_STATE_ON);
+        pt_delay(pt, tails_timer, 150);
+        output_request(OUTPUT_TAILS, OUTPUT_STATE_OFF);
+        pt_delay(pt, tails_timer, 2550);
     }
 
     // Set tail lights on/off as requested.
@@ -172,6 +161,48 @@ tails_thread(struct pt *pt)
         output_request(OUTPUT_TAILS, OUTPUT_STATE_ON);
     } else {
         output_request(OUTPUT_TAILS, OUTPUT_STATE_OFF);
+    }
+
+    pt_end(pt);
+}
+
+
+void
+rain_light_request(light_state_t state)
+{
+    assert(state < _LIGHT_STATE_MAX);
+
+    // If this is a change of state for the rain lights, update
+    // the requested state and reset the thread to make it so.
+    //
+    if (rain_light_requested != state) {
+        rain_light_requested = state;
+        pt_reset(&pt_tails);
+    }
+}
+
+void
+rains_thread(struct pt *pt)
+{
+    static timer_t rains_timer = { .delay_ms = 0 };
+
+    pt_begin(pt);
+ 
+    // Lazy timer registration.
+    //
+    if (!timer_registered(rains_timer)) {
+        timer_register(&rains_timer);
+    }
+
+    output_request(OUTPUT_RAINS, OUTPUT_STATE_OFF);
+
+    // Blink rain light(s) at 4Hz
+    //
+    while (rain_light_requested == LIGHT_ON) {
+        output_request(OUTPUT_RAINS, OUTPUT_STATE_ON);
+        pt_delay(pt, rains_timer, 125);
+        output_request(OUTPUT_RAINS, OUTPUT_STATE_OFF);
+        pt_delay(pt, rains_timer, 125);
     }
 
     pt_end(pt);

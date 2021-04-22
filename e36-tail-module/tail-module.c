@@ -33,11 +33,14 @@ void default_handler() __interrupt(32)
 struct pt pt_can_listener;
 struct pt pt_can_report_fuel;
 struct pt pt_can_report_diags;
-struct pt pt_console_report;
 struct pt pt_cas_jbe_emulator;
 struct pt pt_brakes;
 struct pt pt_tails;
+struct pt pt_rains;
 struct pt pt_output[_OUTPUT_ID_MAX];
+struct pt pt_t15_check;
+
+static void t15_check(struct pt *pt);
 
 // Filters
 // 0x0a8 (DDE brake lights)
@@ -94,10 +97,10 @@ main()
         can_listen(&pt_can_listener);
         can_report_fuel(&pt_can_report_fuel);
         can_report_diags(&pt_can_report_diags);
-        console_report(&pt_console_report);
         cas_jbe_emulator(&pt_cas_jbe_emulator);
         brake_thread(&pt_brakes);
         tails_thread(&pt_tails);
+        rains_thread(&pt_rains);
         for (output_id_t x = 0; x < _OUTPUT_ID_MAX; x++) {
             output_thread(&pt_output[x], x);
         }
