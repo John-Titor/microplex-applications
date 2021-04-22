@@ -144,10 +144,8 @@ class RXMessage(object):
 
 class MSG_ack(RXMessage):
     """broadcast message sent by module on power-up, reboot or crash"""
-    _format = '>BBBHBH'
+    _format = '>BIBH'
     _filter = [(False, 0),
-               (True, 0),
-               (True, 0),
                (False, 0),
                (False, 0),
                (False, 0)]
@@ -168,8 +166,10 @@ class MSG_ack(RXMessage):
     def __init__(self, raw):
         super().__init__(expected_id=ACK_ID,
                          raw=raw)
-        (self.reason_code, _, _,
-         self.module_id, self.status_code, self.sw_version) = self._values
+        (self.reason_code,
+         self.module_id,
+         self.status_code,
+         self.sw_version) = self._values
         try:
             self.reason = self.REASON_MAP[self.reason_code]
         except KeyError:

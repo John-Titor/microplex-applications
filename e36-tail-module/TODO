@@ -1,10 +1,10 @@
 Functional requirements:
   ✔ react to BMW brake light message @done (21-04-13 20:05)
   ✔ react to BMW lighting message (rain = rear fog) @done (21-04-13 20:32)
-  ☐ report 0-5V signal from AI_1 / fuel level sensor via BMW fuel level message
-  ☐ report status, temperature, T30 voltage via CAN (for diagnostics)
+  ✔ report 0-5V signal from AI_1 / fuel level sensor via BMW fuel level message @done (21-04-22 00:39)
+  ✔ report status, temperature, T30 voltage via CAN (for diagnostics) @done (21-04-22 00:39)
   ☐ emulate the E90 JBE / CAS sufficient for Protools / XHP
-  ☐ power-up on T15, power-down when off
+  ✔ power-up on T15, power-down when off @done (21-04-22 00:39)
   ✔ on CAN timeout, blink left/right slowly @done (21-04-20 19:28)
   ✔ brake lights blink quickly when activated (and have been off for > 4s) @done (21-04-13 20:05)
 
